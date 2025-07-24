@@ -2,3 +2,22 @@
 /baie_value_policy.pth
 /blueprint_policy.pth
 /models/*.*
+# Python virtual environment
+/.venv/
+/__pycache__/
+*.pyc
+
+# Model files (large, not suitable for git)
+models/
+!models/.gitkeep  # (optional) keep the folder, but not the model files
+
+# OS and IDE files
+.DS_Store
+.vscode/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Log files
+*.log
+/__pycache__

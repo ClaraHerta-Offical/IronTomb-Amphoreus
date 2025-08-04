@@ -26,12 +26,14 @@ from display_manager import DisplayManager
 from policy_saver import PolicySaver
 from cpu_llm_interface import CpuLlmInterface
 
+from config import config
+
 class AeonEvolution:
     def __init__(self, 
                  # --- LLM 触发频率配置 ---
                  bard_frequency=10,         # 吟游诗人每N个世代触发一次 (0为禁用)
                  laertes_frequency=25,        # 来古士每N个世代触发一次 (0为禁用)
-                 kaoselanna_llm_enabled=True, # 是否启用LLM作为卡厄斯兰那决策模型
+                 kaoselanna_llm_enabled=config['llm']['kaoselanna_llm_enabled'], # 是否启用LLM作为卡厄斯兰那决策模型
 
                  # --- 演化参数 ---
                  num_initial_entities=200, golden_one_cap=12, population_soft_cap=300, 

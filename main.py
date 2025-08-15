@@ -5,6 +5,32 @@ import sys
 import traceback
 import colorama
 from simulation import AeonEvolution
+import logging
+from config import config
+from datetime import datetime
+
+logging.basicConfig(
+    filename=config['log']['file_name'],
+    level=logging.INFO,
+    format='[%(asctime)s][%(levelname)s] %(message)s'
+)
+
+class LoggerWriter:
+    def __init__(self, level, stream):
+        self.level = level
+        self.stream = stream
+        self._buffer = ''
+    def write(self, message):
+        if message != '\n':
+            self._buffer += message
+        if '\n' in message:
+            self.flush()
+        self.stream.write('[{0}][{1}] {2}\r\n'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'), self.level.__name__, self._buffer))  # 同时输出到控制台
+    def flush(self):
+        if self._buffer:
+            self.level(self._buffer)
+            self._buffer = ''
+        self.stream.flush()
 
 def run_simple():
     """ 以简单的控制台模式运行模拟 """
@@ -15,7 +41,7 @@ def run_simple():
             # --- LLM 控制 ---
             bard_frequency=0,         
             laertes_frequency=0,      
-            kaoselanna_llm_enabled=False,
+            kaoselanna_llm_enabled=config['llm']['kaoselanna_llm_enabled'],
 
             # --- 其他模拟参数 ---
             num_initial_entities=200, 
@@ -36,7 +62,7 @@ def run_simple():
             norm_adjustment_strength=0.05
         )
         print("=== 翁法罗斯 v10.3 (Dev) 启动 ===")
-        sim.start(num_generations=33550336)
+        sim.start(num_generations=config['generations'])
 
     except KeyboardInterrupt:
         print("\n\n模拟被用户中断。正在退出...")
@@ -59,4 +85,7 @@ def run_simple():
 
 
 if __name__ == "__main__":
+    if config['log']['enable']:
+        sys.stdout = LoggerWriter(logging.info, sys.stdout)
+        sys.stderr = LoggerWriter(logging.error, sys.stderr)
     run_simple()

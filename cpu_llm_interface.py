@@ -2,17 +2,20 @@
 
 from llama_cpp import Llama
 import os
+from config import config
 
 class CpuLlmInterface:
     def __init__(self, model_folder="models"):
         """
         初始化并加载GGUF模型。
         """
-        model_name = "Qwen3-0.6B-Q8_0.gguf"
+        if not config['llm']['enable_llm']:
+            print("\033[93m大模型功能已禁用。请在配置文件中启用。\033[0m")
+            self.llm = None
+            return
+
+        model_name = config['llm']['model_name']
         model_path = os.path.join(model_folder, model_name)
-        
-        self.llm = None
-        print(f"正在从路径: '{model_path}' 加载 Qwen3-0.6B 模型...")
 
         if not os.path.exists(model_path):
             print(f"\n\033[91m错误：找不到模型文件！\033[0m")
@@ -28,11 +31,11 @@ class CpuLlmInterface:
             self.llm = Llama(
                 model_path=model_path,
                 n_ctx=4096,  # Qwen3的上下文窗口较大
-                n_gpu_layers=0,
+                n_gpu_layers=config['llm']['gpu_max_count'],  # GPU核心数量
                 verbose=False,
-                enable_thinking=False
+                enable_thinking=config['llm']['enable_thinking']
             )
-            print("\033[92mQwen3-0.6B 模型加载成功！翁法罗斯拥有了新的低语者。\033[0m")
+            print("\033[92m模型加载成功！翁法罗斯拥有了新的低语者。\033[0m")
         except Exception as e:
             print(f"\n\033[91m模型加载时发生致命错误: {e}\033[0m")
             print("这可能是由于文件损坏或库安装不正确。")

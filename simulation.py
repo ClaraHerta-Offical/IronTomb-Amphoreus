@@ -118,13 +118,7 @@ class AeonEvolution:
         # --- 管理器实例化 ---
         self.debugger = Debugger(self)
         self.display_manager = DisplayManager()
-        # 在PopulationManager之后实例化
-        self.diversity_manager = DiversityInterventionManager(
-            config=config,
-            population_manager=self.population_manager,
-            parliament_manager=self.parliament_manager
-        )
-
+        
         self.population_manager = PopulationManager(
             existing_names=self.existing_names, 
             name_to_entity_map=self.name_to_entity_map, 
@@ -137,6 +131,12 @@ class AeonEvolution:
             max_affinity_norm=self.max_affinity_norm,
             min_norm=self.min_norm,
             max_norm=self.max_norm
+        )
+        # 在PopulationManager之后实例化
+        self.diversity_manager = DiversityInterventionManager(
+            config=config,
+            population_manager=self.population_manager,
+            parliament_manager=self.parliament_manager
         )
         self.interaction_handler = InteractionHandler(
             PATH_RELATIONSHIP_MATRIX=PATH_RELATIONSHIP_MATRIX, 
@@ -172,6 +172,7 @@ class AeonEvolution:
             action_policy_network=self.action_policy_network,
             value_network=self.value_network
         )
+        self.reincarnator_name = None
 
     def _trigger_llm_narrators(self):
         if not self.llm_interface or not self.llm_interface.llm:
@@ -717,3 +718,88 @@ class AeonEvolution:
                  print(self.reincarnator)
         else: print("翁法罗斯最终归于沉寂。")
         self.policy_saver.save_policy_models()
+
+    def save_simulation_state(self, filepath):
+        """保存整个模拟的当前状态到一个JSON文件。"""
+        print(f"\n\033[96m正在保存模拟状态至 {filepath} ...\033[0m")
+        if self.reincarnator:
+            self.reincarnator_name = self.reincarnator.name
+
+        state = {
+            # 基础状态
+            'generation': self.generation,
+            'aeonic_cycle_mode': self.aeonic_cycle_mode,
+            'reincarnator_name': self.reincarnator_name,
+            
+            # 核心演化参数
+            'base_titan_affinities': self.base_titan_affinities.tolist(),
+            'cosmic_zeitgeist': self.cosmic_zeitgeist.tolist(),
+
+            # 种群信息
+            'population': [p.to_dict() for p in self.population],
+            'existing_names': list(self.existing_names),
+
+            # 管理器状态
+            'parliament_seats': self.parliament_manager.seats,
+            'stagnation_counter': self.stagnation_manager.long_term_stagnation_counter,
+            'baie_stagnation_counter': self.stagnation_manager.baie_stagnation_counter,
+            'diversity_intervention': self.diversity_manager.active_intervention,
+            'diversity_duration': self.diversity_manager.intervention_duration,
+
+            # 模拟权重
+            'simulation_weights': self.simulation_weights,
+        }
+
+        try:
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(state, f, indent=4)
+            print(f"\033[92m状态保存成功！\033[0m")
+        except Exception as e:
+            print(f"\033[91m错误: 存档失败。原因: {e}\033[0m")
+
+    def load_simulation_state(self, filepath):
+        """从JSON文件加载模拟状态。"""
+        print(f"\n\033[96m正在从 {filepath} 加载模拟状态...\033[0m")
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                state = json.load(f)
+
+            # 恢复基础状态
+            self.generation = state['generation']
+            self.aeonic_cycle_mode = state['aeonic_cycle_mode']
+            self.reincarnator_name = state['reincarnator_name']
+
+            # 恢复核心演化参数
+            self.base_titan_affinities = np.array(state['base_titan_affinities'])
+            self.cosmic_zeitgeist = np.array(state['cosmic_zeitgeist'])
+            
+            # 恢复管理器状态
+            self.parliament_manager.seats = state['parliament_seats']
+            self.stagnation_manager.long_term_stagnation_counter = state['stagnation_counter']
+            self.stagnation_manager.baie_stagnation_counter = state['baie_stagnation_counter']
+            self.diversity_manager.active_intervention = state['diversity_intervention']
+            self.diversity_manager.intervention_duration = state['diversity_duration']
+            self.simulation_weights = state['simulation_weights']
+
+            # 清理并重建种群
+            self.population.clear()
+            self.name_to_entity_map.clear()
+            self.existing_names = set(state['existing_names'])
+
+            for entity_data in state['population']:
+                entity = Pathstrider.from_dict(entity_data, self.titan_to_path_model_instance)
+                self.population.append(entity)
+                self.name_to_entity_map[entity.name] = entity
+
+            # 恢复白厄引用
+            if self.reincarnator_name and self.reincarnator_name in self.name_to_entity_map:
+                self.reincarnator = self.name_to_entity_map[self.reincarnator_name]
+            else:
+                self.reincarnator = None
+            
+            print(f"\033[92m状态加载成功！模拟将从第 {self.generation} 世代继续。\033[0m")
+
+        except FileNotFoundError:
+            print(f"\033[91m错误: 找不到存档文件 {filepath}。\033[0m")
+        except Exception as e:
+            print(f"\033[91m错误: 读档失败。文件可能已损坏或格式不兼容。原因: {e}\033[0m")

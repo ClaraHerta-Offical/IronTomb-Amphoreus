@@ -142,6 +142,22 @@ class Debugger:
                         except (ValueError, TypeError):
                             print(f"错误: 无法将 '{value}' 转换为 '{param}' 所需的类型。")
                     else: print(f"错误: 模拟中不存在名为 '{param}' 的参数。")
+
+                elif cmd == 'save':
+                    if not args:
+                        print("错误: 请提供存档文件名。用法: save <filename.json>")
+                        continue
+                    filepath = args[0]
+                    self.sim.save_simulation_state(filepath)
+
+                elif cmd == 'load':
+                    if not args:
+                        print("错误: 请提供要加载的存档文件名。用法: load <filename.json>")
+                        continue
+                    filepath = args[0]
+                    self.sim.load_simulation_state(filepath)
+                    print("状态已加载。输入 'c' 或 'n' 继续。")
+
                 elif cmd == 'help':
                     print("\n--- 可用命令 ---")
                     print("  c, continue         : 继续模拟")
@@ -152,6 +168,8 @@ class Debugger:
                     print("  zeitgeist           : 查看当前的翁法罗斯思潮权重")
                     print("  blueprint           : 查看当前的演化蓝图亲和度")
                     print("  set <param> <value> : 动态设置一个模拟参数 (如: set mutation_rate 0.5)")
+                    print("  save <file.json>    : 将当前模拟状态保存到文件")
+                    print("  load <file.json>    : 从文件加载模拟状态")
                     print("  help                : 显示此帮助信息")
                     print("---")
                 else:

@@ -40,7 +40,7 @@ if config['log']['enable']:
     sys.stdout = LoggerWriter(logger.info)
     sys.stderr = LoggerWriter(logger.error)
 
-def run_simple():
+def run_simple(load_save_path=None):
     """ 以简单的控制台模式运行模拟 """
     colorama.init()
     
@@ -70,6 +70,9 @@ def run_simple():
             target_avg_score=config['simulation']['target_avg_score'],
             norm_adjustment_strength=config['simulation']['norm_adjustment_strength']
         )
+        if load_save_path:
+            sim.load_simulation_state(load_save_path)
+
         print("=== 翁法罗斯 v10.4 (Dev) 启动 ===")
         sim.start(
             num_generations=config['simulation_phases']['TOTAL_SIMULATION_END']
@@ -97,6 +100,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="翁法罗斯")
     parser.add_argument('--disable-llm', action='store_true', 
                         help='彻底禁用LLM参与演算，无需安装llama_cpp。')
+    parser.add_argument('--load-save', type=str, default=None,
+                        help='从指定的存档文件加载并开始模拟。')
     args = parser.parse_args()
 
     # 根据参数更配

@@ -108,3 +108,4 @@ You can directly load an archive file via a command-line argument when launching
 - HeyCrab3
 - AvalonRuFae
 - MoonofBridge24
+- Akanyi

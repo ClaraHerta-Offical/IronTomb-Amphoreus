@@ -689,11 +689,13 @@ class AeonEvolution:
                     if should_end_simulation: break
                 
                 self.display_manager.update_and_display_progress('cycle', self.aeonic_cycle_manager.aeonic_cycle_number, 1000) # 更新进度条
-            
-            if self.legacy_manager.is_initialized:
-                self.legacy_manager.apply_legacy_effects(self) # 将主模拟实例 self 传进去
 
-            else: 
+            else: # 如果不是永劫回归模式，就执行正常的凡人时代逻辑
+                # 遗物效果应该在每一代都应用，直到其影响力消失
+                if self.legacy_manager.is_initialized:
+                    self.legacy_manager.apply_legacy_effects(self)
+
+                # 核心演化和成长逻辑也应该在每一代都执行
                 culled_this_gen = self._run_one_generation()
                 self._evolve_and_grow(culled_this_gen)
                 self.display_manager.update_and_display_progress('normal', self.generation, HUMAN_PHASE_END)

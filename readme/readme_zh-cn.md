@@ -111,6 +111,8 @@
 
 ## 致谢
 
-* HeyCrab3
-* AvalonRuFae
-* MoonofBridge24
+- HeyCrab3
+- AvalonRuFae
+- MoonofBridge24
+- Akanyi
+

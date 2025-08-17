@@ -6,6 +6,7 @@ class ParliamentManager:
     def __init__(self):
         self.seats = {name: 0 for name in PATH_NAMES}
         self.total_seats = 100
+        self.suppression_factor = 1.0 # 默认为1.0，即无抑制
 
     def hold_election(self, population: list):
         """根据所有实体的投票，分配议会席位。"""
@@ -42,7 +43,10 @@ class ParliamentManager:
         dominant_party = max(self.seats, key=self.seats.get)
         print(f"本世代议会已组成，命途主导 '{dominant_party}' (席位: {self.seats[dominant_party]}/{self.total_seats})")
         print("--------------------------\033[0m")
-
+        # 重置抑制因子，除非干预仍在持续
+        if self.suppression_factor != 1.0:
+             pass
+    
     def get_zeitgeist_multiplier(self, entity_path_affinities: np.ndarray) -> float:
         """根据实体命途与当前议会格局，计算思潮乘数。"""
         if np.sum(list(self.seats.values())) == 0:
@@ -50,5 +54,8 @@ class ParliamentManager:
         seat_vector = np.array([self.seats[name] for name in PATH_NAMES])
         normalized_seat_vector = seat_vector / self.total_seats
         alignment_score = np.dot(entity_path_affinities, normalized_seat_vector) - np.dot(1 - entity_path_affinities, normalized_seat_vector)
-        multiplier = 1.15 + 0.35 * np.tanh(alignment_score * 3)
-        return max(0.8, min(1.5, multiplier))
+        
+        # 将思潮带来的影响乘以抑制因子
+        multiplier = 1.05 + (0.15 * np.tanh(alignment_score * 3) * self.suppression_factor)
+        
+        return max(0.9, min(1.2, multiplier))

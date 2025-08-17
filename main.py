@@ -44,35 +44,36 @@ def run_simple():
     """ 以简单的控制台模式运行模拟 """
     colorama.init()
     
-    config['generations'] = 324646553633550336
     sim = None
     try:
         sim = AeonEvolution(
             # --- LLM ---
-            bard_frequency=0,         
-            laertes_frequency=0,      
+            bard_frequency=config['simulation']['bard_frequency'],         
+            laertes_frequency=config['simulation']['laertes_frequency'],      
             kaoselanna_llm_enabled=config['llm']['kaoselanna_llm_enabled'],
 
             # --- 其他模拟参数 ---
-            num_initial_entities=200, 
-            golden_one_cap=12, 
-            population_soft_cap=300,
-            population_hard_cap=500, 
-            growth_factor=0.35, 
-            mutation_rate=0.25,
-            culling_strength=0.85, 
-            encounter_similarity=0.35, 
-            purity_factor=0.01,
-            initial_rl_lr=0.005, 
-            golden_one_reversion_prob=0.1,
-            elite_selection_percentile=80, 
-            aeonic_event_prob=0.05,
-            initial_max_affinity_norm=10000.0, 
-            target_avg_score=50.0,
-            norm_adjustment_strength=0.05
+            num_initial_entities=config['simulation']['num_initial_entities'], 
+            golden_one_cap=config['simulation']['golden_one_cap'], 
+            population_soft_cap=config['simulation']['population_soft_cap'],
+            population_hard_cap=config['simulation']['population_hard_cap'], 
+            growth_factor=config['simulation']['growth_factor'], 
+            mutation_rate=config['simulation']['mutation_rate'],
+            culling_strength=config['simulation']['culling_strength'], 
+            encounter_similarity=config['simulation']['encounter_similarity'], 
+            purity_factor=config['simulation']['purity_factor'],
+            initial_rl_lr=config['simulation']['initial_rl_lr'], 
+            golden_one_reversion_prob=config['simulation']['golden_one_reversion_prob'],
+            elite_selection_percentile=config['simulation']['elite_selection_percentile'], 
+            aeonic_event_prob=config['simulation']['aeonic_event_prob'],
+            initial_max_affinity_norm=config['simulation']['initial_max_affinity_norm'], 
+            target_avg_score=config['simulation']['target_avg_score'],
+            norm_adjustment_strength=config['simulation']['norm_adjustment_strength']
         )
         print("=== 翁法罗斯 v10.4 (Dev) 启动 ===")
-        sim.start(num_generations=config['generations'])
+        sim.start(
+            num_generations=config['simulation_phases']['TOTAL_SIMULATION_END']
+        )
 
     except KeyboardInterrupt:
         print("\n\n模拟被用户中断。正在退出...")

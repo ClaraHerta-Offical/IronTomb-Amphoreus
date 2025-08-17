@@ -75,7 +75,6 @@ class PopulationManager:
         """
         更新黄金裔：将上一代泰坦黄金裔清除，并选举12名新的天选黄金裔。
         """
-        # 清除上一代黄金裔的特殊身份
         for p in population:
             if p.trait == "GoldenOne":
                 p.trait = "Mortal"
@@ -84,16 +83,13 @@ class PopulationManager:
 
         # 选举新的黄金裔
         if not population: return
-        
-        # 候选人不能是泰坦Boss或白厄
         candidates = [p for p in population if not p.is_titan_boss and p.trait != "Reincarnator"]
         candidates.sort(key=lambda p: p.score, reverse=True)
 
         num_titan_golden_ones = min(len(candidates), 12)
-        titan_aspect_names = list(TITAN_NAMES) # 复制列表以进行分配
+        titan_aspect_names = list(TITAN_NAMES) # 复制列表分配
         random.shuffle(titan_aspect_names)
 
-        # 分配12个泰坦名号
         for i in range(num_titan_golden_ones):
             entity = candidates[i]
             entity.trait = "GoldenOne"
@@ -130,12 +126,21 @@ class PopulationManager:
         blueprint = self.base_titan_affinities
         self._add_new_entities(population, num_to_add, blueprint, cosmic_zeitgeist)
 
-    def _add_new_entities(self, population: list, num_to_add: int, blueprint: np.ndarray, cosmic_zeitgeist: np.ndarray):
+    def _add_new_entities(self, population: list, num_to_add: int, blueprint: np.ndarray, 
+                          cosmic_zeitgeist: np.ndarray, legacy_modifier: np.ndarray = None): # 新增参数
         dist_newborns = self.get_global_path_distribution(population)
         for _ in range(num_to_add):
             name = self.generate_unique_name()
             new_affinities = blueprint + np.random.normal(0, self.mutation_rate, self.base_titan_affinities.shape)
             entity = Pathstrider(name, new_affinities, titan_to_path_model=self.titan_to_path_model)
+            
+            # 应用修正
+            if legacy_modifier is not None:
+                # 将命途修正值转换回对泰坦亲和度的影响
+                # 这是通过反馈矩阵 (path_to_titan) 来实现的，虽然不完美...Sakaye不想改了
+                titan_modifier = np.dot(legacy_modifier, self.titan_to_path_model.path_to_titan_feedback_matrix)
+                entity.titan_affinities += titan_modifier * 50.0 # 50.0 是一个可调的魔法数字
+
             self.recalculate_and_normalize_entity(entity, dist_newborns, cosmic_zeitgeist)
             population.append(entity)
             self.name_to_entity_map[name] = entity

@@ -11,6 +11,7 @@ import time
 
 # --- 在顶部导入新模块 ---
 from parliament_manager import ParliamentManager
+from diversity_manager import DiversityInterventionManager
 from visitor_manager import VisitorManager
 from constants import (
     TITAN_NAMES, PATH_NAMES, 
@@ -27,6 +28,7 @@ from aeonic_cycle_manager import AeonicCycleManager
 from display_manager import DisplayManager
 from policy_saver import PolicySaver
 from cpu_llm_interface import CpuLlmInterface
+from primordial_legacy_manager import PrimordialLegacyManager
 
 from config import config
 
@@ -48,6 +50,7 @@ class AeonEvolution:
         
         # --- LLM 配置存储 ---
         self.bard_frequency = bard_frequency
+        self.legacy_manager = PrimordialLegacyManager()
         self.laertes_frequency = laertes_frequency
         self.kaoselanna_llm_enabled = kaoselanna_llm_enabled
         
@@ -115,6 +118,12 @@ class AeonEvolution:
         # --- 管理器实例化 ---
         self.debugger = Debugger(self)
         self.display_manager = DisplayManager()
+        # 在PopulationManager之后实例化
+        self.diversity_manager = DiversityInterventionManager(
+            config=config,
+            population_manager=self.population_manager,
+            parliament_manager=self.parliament_manager
+        )
 
         self.population_manager = PopulationManager(
             existing_names=self.existing_names, 
@@ -272,7 +281,7 @@ class AeonEvolution:
                 print(f"\n\033[36m【权柄发动】'律法'黄金裔 {law_golden_one.name} 修改了演算规则！")
                 print(f"参数 '{param_to_modify}' 从 {original_value:.3f} 变为 {self.simulation_weights[param_to_modify]:.3f}\033[0m")
         except StopIteration:
-            pass # 没有满足条件的“律法”黄金裔
+            pass # 没有满足条件的律法半神
 
     def _check_for_aeonic_events(self, culled_this_gen):
         if random.random() < self.aeonic_event_prob:
@@ -377,6 +386,15 @@ class AeonEvolution:
         
         # 律法半神发动权柄
         self._apply_law_titan_power()
+
+        # 在交互和淘汰计算之后，评估多样性并进行干预
+        self.diversity_manager.assess_and_intervene(self.population, self.generation)
+        
+        # 重新计算所有实体分数，因为干预措施可能已经改变了它们
+        global_dist = self.population_manager.get_global_path_distribution(self.population)
+        for p in self.population:
+            multiplier = self.parliament_manager.get_zeitgeist_multiplier(p.path_affinities)
+            p.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
                     
         print(f"世代 {self.generation} 演算结束。")
         return culled_this_gen
@@ -445,7 +463,9 @@ class AeonEvolution:
             self.population_manager.replenish_population_by_growth(
                 population=self.population,
                 num_to_add=num_new_entities,
-                cosmic_zeitgeist=self.cosmic_zeitgeist
+                cosmic_zeitgeist=self.cosmic_zeitgeist,
+                # 传递修正值
+                legacy_modifier=self.legacy_manager.newborn_affinity_modifier * self.legacy_manager.influence_factor
             )
         
         if len(self.population) > self.population_hard_cap:
@@ -466,7 +486,7 @@ class AeonEvolution:
             strongest = max(self.population, key=lambda p: p.score)
             print(f"\033[95m当前最强者: {strongest}\033[0m")
 
-    def _run_inorganic_phase(self, num_generations=50121, activity_threshold=15.0):
+    def _run_inorganic_phase(self, num_generations=50121): 
         print("\n=== 进入无机实体培养阶段 ===")
         print("...正在通过类元胞自动机演化“活性”与“稳定性”概念...")
         
@@ -523,31 +543,53 @@ class AeonEvolution:
         print("!!! 其“活性”数据溢出，呈现出混沌和毁灭的混合倾向。                  ")
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\033[0m")
         
-        print("\n\033[92m>>> 无机阶段演算完成! 原型概念模型已释放，将作为后续演化的基础。 <<<\033[0m")
+        final_activities = [cell['activity'] for cell in inorganic_pop]
+        final_stabilities = [cell['stability'] for cell in inorganic_pop]
+        
+        avg_activity = np.mean(final_activities)
+        avg_stability = np.mean(final_stabilities)
+
+        inorganic_legacy = {
+            "avg_activity": avg_activity,
+            "avg_stability": avg_stability
+        }
+        
+        print(f"\n\033[92m>>> 无机阶段演完成! 宇宙的初始倾向已确立 [活性: {avg_activity:.2f}, 稳定性: {avg_stability:.2f}] <<<\033[0m")
+        
+        return inorganic_legacy # 返回
         
     # 有机阶段方法 
     def _run_organic_phase(self, start_gen, end_gen):
         print("\n\n=== 进入有机实体孕育阶段 ===")
         print("...基于无机演化的数据，正在训练初始概念模型...")
         
+        # 定义一个简单的原型网络
         class OrganicProtoNet(nn.Module):
             def __init__(self):
                 super(OrganicProtoNet, self).__init__()
+                # 模型的输入和输出维度都是10
                 self.layer = nn.Linear(10, 10)
             def forward(self, x):
                 return torch.relu(self.layer(x))
 
+        # 实例化模型、损失函数和优化器
         organic_model = OrganicProtoNet()
         optimizer = optim.SGD(organic_model.parameters(), lr=0.01)
-        
+        loss_fn = nn.MSELoss()  # 使用均方误差损失函数
+
+        print("初始模型训练中...")
         for i in range(101):
+            dummy_input = torch.randn(1, 10) 
+            dummy_target = torch.randn(1, 10)
             optimizer.zero_grad()
-            loss = torch.randn(1)
+            output = organic_model(dummy_input)
+            loss = loss_fn(output, dummy_target)
             loss.backward()
             optimizer.step()
-            sys.stdout.write(f"\r模型训练中... {i}%")
+            sys.stdout.write(f"\r模型训练中... {i}% (Loss: {loss.item():.4f})")
             sys.stdout.flush()
             time.sleep(0.02)
+            
         print("\n初始模型训练完成。")
 
         print("...开始模拟初始有机体交互...")
@@ -561,30 +603,36 @@ class AeonEvolution:
             
             if len(self.population) > 100:
                 self.population.sort(key=lambda p: p.score)
-                self.population.pop(0) # 每代淘汰最弱者
+                self.population.pop(0)
 
             if self.debugger.paused: return 
         
         print("\n\n\033[92m>>> 有机孕育阶段完成! 概念原型机已固化。 <<<\033[0m")
-        self.policy_saver.save_organic_model(organic_model)
+        self.policy_saver.save_organic_model(organic_model) # 保存模型
+        
+        return organic_model 
 
-    def start(self, num_generations=80):
+    def start(self, num_generations):
         # --- 定义演算 ---
-        INORGANIC_PHASE_END = 50121
-        ORGANIC_PHASE_END = 176199
-        HUMAN_PHASE_END = 28371273
-        TOTAL_SIMULATION_END = 33550336
+        INORGANIC_PHASE_END = config['simulation_phases']['INORGANIC_PHASE_END']
+        ORGANIC_PHASE_END = config['simulation_phases']['ORGANIC_PHASE_END']
+        HUMAN_PHASE_END = config['simulation_phases']['HUMAN_PHASE_END']
+        TOTAL_SIMULATION_END = config['simulation_phases']['TOTAL_SIMULATION_END']
 
-        self.total_generations = TOTAL_SIMULATION_END
+        self.total_generations = num_generations
         was_paused = False
 
-        self._run_inorganic_phase(num_generations=INORGANIC_PHASE_END)
+        # --- 运行早期阶段 ---
+        inorganic_legacy = self._run_inorganic_phase(num_generations=INORGANIC_PHASE_END)
         self._create_initial_population(create_reincarnator=False) 
 
         self.generation = INORGANIC_PHASE_END + 1
-        self._run_organic_phase(self.generation, ORGANIC_PHASE_END)
+        organic_legacy_model = self._run_organic_phase(self.generation, ORGANIC_PHASE_END)
         
-        print("\n\n>>> 凡人时代开启...演化正在无引导地进行... <<<")
+        # --- 初始化系统 ---
+        self.legacy_manager.initialize(inorganic_legacy, organic_legacy_model)
+        
+        print("\n\n>>> 演化正在无引导地进行... <<<")
         self.generation = ORGANIC_PHASE_END + 1
 
         while self.generation <= TOTAL_SIMULATION_END:
@@ -639,6 +687,9 @@ class AeonEvolution:
                 
                 self.display_manager.update_and_display_progress('cycle', self.aeonic_cycle_manager.aeonic_cycle_number, 1000) # 更新进度条
             
+            if self.legacy_manager.is_initialized:
+                self.legacy_manager.apply_legacy_effects(self) # 将主模拟实例 self 传进去
+
             else: 
                 culled_this_gen = self._run_one_generation()
                 self._evolve_and_grow(culled_this_gen)

@@ -1,5 +1,7 @@
 # Tiemu Project
 
+[简体中文](readme/readme_zh-cn.md)
+
 ## Quick Start
 
 1. **Clone the repository:**

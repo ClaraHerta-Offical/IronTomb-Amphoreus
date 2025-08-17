@@ -49,8 +49,6 @@ class PopulationManager:
         entity.titan_affinities += self.cosmic_tide_vector
         entity.titan_affinities = entity.titan_affinities.clip(min=0)
         self.normalize_affinities(entity)
-        if path_distribution is not None and cosmic_zeitgeist is not None:
-            entity.recalculate_concepts(path_distribution, cosmic_zeitgeist)
 
     def normalize_affinities(self, entity_or_blueprint):
         target = entity_or_blueprint.titan_affinities if isinstance(entity_or_blueprint, Pathstrider) else entity_or_blueprint
@@ -74,34 +72,41 @@ class PopulationManager:
         return distribution
 
     def update_golden_ones(self, population: list):
-        current_golden_ones = [p for p in population if p.trait == "GoldenOne"]
-        is_cap_met = len(current_golden_ones) >= self.golden_one_cap
-        reverted_count = 0
-        for entity in current_golden_ones:
-            if entity.golden_one_tenure >= 2:
-                reversion_prob = self.golden_one_reversion_prob * (entity.golden_one_tenure - 1)
-                if is_cap_met: reversion_prob *= 2
-                if np.random.random() < reversion_prob:
-                    entity.trait = "Mortal"
-                    entity.golden_one_tenure = 0
-                    reverted_count += 1
-            else: entity.golden_one_tenure += 1
-        eligible_for_promotion = [p for p in population if p.trait == "Mortal"]
-        if not eligible_for_promotion: return
+        """
+        更新黄金裔：将上一代泰坦黄金裔清除，并选举12名新的天选黄金裔。
+        """
+        # 清除上一代黄金裔的特殊身份
+        for p in population:
+            if p.trait == "GoldenOne":
+                p.trait = "Mortal"
+                p.titan_aspect = None
+                p.data_modification_unlocked = False
+
+        # 选举新的黄金裔
+        if not population: return
         
-        eligible_for_promotion.sort(key=lambda p: p.heroic_tendency, reverse=True)
-        tendencies = [p.heroic_tendency for p in eligible_for_promotion if np.isfinite(p.heroic_tendency)]
-        if not tendencies: return
-        
-        promotion_threshold = np.percentile(tendencies, 95)
-        available_slots = self.golden_one_cap - (len(current_golden_ones) - reverted_count)
-        
-        for entity in eligible_for_promotion:
-            if available_slots <= 0: break
-            if entity.heroic_tendency >= promotion_threshold and entity.trait == "Mortal":
+        # 候选人不能是泰坦Boss或白厄
+        candidates = [p for p in population if not p.is_titan_boss and p.trait != "Reincarnator"]
+        candidates.sort(key=lambda p: p.score, reverse=True)
+
+        num_titan_golden_ones = min(len(candidates), 12)
+        titan_aspect_names = list(TITAN_NAMES) # 复制列表以进行分配
+        random.shuffle(titan_aspect_names)
+
+        # 分配12个泰坦名号
+        for i in range(num_titan_golden_ones):
+            entity = candidates[i]
+            entity.trait = "GoldenOne"
+            entity.golden_one_tenure = 0
+            entity.titan_aspect = titan_aspect_names.pop()
+
+        # 分配普通黄金裔（如果上限更高）
+        num_normal_golden_ones = min(len(candidates) - 12, self.golden_one_cap - 12)
+        if num_normal_golden_ones > 0:
+            for i in range(num_normal_golden_ones):
+                entity = candidates[12 + i]
                 entity.trait = "GoldenOne"
-                entity.golden_one_tenure = 1
-                available_slots -= 1
+                entity.golden_one_tenure = 0
 
     def check_and_replenish_population(self, population: list, population_soft_cap: int, 
                                        aeonic_cycle_mode: bool, reincarnator: Pathstrider, 

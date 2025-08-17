@@ -14,7 +14,12 @@ class DisplayManager:
         filled_length = int(bar_length * progress)
         bar = '█' * filled_length + '-' * (bar_length - filled_length)
         
-        phase_map = {'inorganic': '阶段一：无机推演', 'normal': '阶段二：追踪实体', 'cycle': '阶段三：永劫轮回'}
+        phase_map = {
+            'inorganic': '阶段一：无机推演', 
+            'organic': '阶段二：有机测算', 
+            'normal': '阶段三：凡人时代', 
+            'cycle': '阶段四：永劫轮回'
+        }
         phase_text = phase_map.get(phase, phase)
         
         message = f"演算进度: |{bar}| {progress:.1%} ({phase_text})"

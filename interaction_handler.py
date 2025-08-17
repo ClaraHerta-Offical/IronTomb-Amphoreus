@@ -38,13 +38,23 @@ class InteractionHandler:
 
     def entity_interaction(self, strider1: Pathstrider, strider2: Pathstrider, 
                            population: list, reincarnator: Pathstrider, 
-                           global_path_distribution: np.ndarray, cosmic_zeitgeist: np.ndarray):
+                           global_path_distribution: np.ndarray, cosmic_zeitgeist: np.ndarray,
+                           zeitgeist_multiplier: float): 
+        participants = [strider1, strider2]
+        golden_one = next((p for p in participants if p.trait == "GoldenOne" and p.titan_aspect), None)
+        titan_boss = next((p for p in participants if p.is_titan_boss), None)
+
+        if golden_one and titan_boss and golden_one.titan_aspect == titan_boss.titan_aspect:
+            return self._handle_titan_battle(golden_one, titan_boss)
+
         is_reincarnator_involved = reincarnator and reincarnator in {strider1, strider2}
+        
         if is_reincarnator_involved and strider1.dominant_path_idx == strider2.dominant_path_idx:
             other_entity = strider2 if reincarnator is strider1 else strider1
             if other_entity.trait != "GoldenOne":
-                print(f"\033[91m对决: 卡厄斯兰那在其命途 '{PATH_NAMES[reincarnator.dominant_path_idx]}' 上遭遇敌人 {other_entity.name}，并将其击败！\033[0m")
+                print(f"\033[91m卡厄斯兰那在其命途 '{PATH_NAMES[reincarnator.dominant_path_idx]}' 上对敌人 {other_entity.name} 发动了无条件的毁灭！\033[0m")
                 return other_entity
+        
         participants = {strider1, strider2}
         if reincarnator in participants:
             other_entity = next((p for p in participants if p is not reincarnator), None)
@@ -55,16 +65,21 @@ class InteractionHandler:
                     else: reincarnator.titan_affinities[neg_world_idx] *= 1.02
                     self.population_manager.recalculate_and_normalize_entity(reincarnator, global_path_distribution, cosmic_zeitgeist)
                 except (ValueError, IndexError): pass
+        
         if strider1.trait == "GoldenOne" or strider2.trait == "GoldenOne": return None
-        if len(population) > self.population_soft_cap:
-            stronger, weaker = (strider1, strider2) if strider1.score > strider2.score else (strider2, strider1)
-            if np.random.random() < math.tanh((stronger.score - weaker.score) * self.culling_strength): return weaker
+        
+        stronger, weaker = (strider1, strider2) if strider1.score > strider2.score else (strider2, strider1)
+        if np.random.random() < math.tanh((stronger.score - weaker.score) * self.culling_strength):
+            return weaker
+        
         dom_path1, dom_path2 = strider1.dominant_path_idx, strider2.dominant_path_idx
         interaction_type = self.PATH_RELATIONSHIP_MATRIX[dom_path1, dom_path2]
+        
         if interaction_type == "CLASH": return self._handle_clash(strider1, strider2, global_path_distribution, cosmic_zeitgeist)
         elif interaction_type == "SYNERGY": self._handle_synergy(strider1, strider2, global_path_distribution, cosmic_zeitgeist)
         elif interaction_type == "REPULSION": self._handle_repulsion(strider1, strider2, global_path_distribution, cosmic_zeitgeist)
         elif interaction_type == "MENTORSHIP": self._handle_mentorship_or_assimilation(strider1, strider2, global_path_distribution, cosmic_zeitgeist)
+        
         return None
 
     def _handle_clash(self, strider1: Pathstrider, strider2: Pathstrider, 
@@ -108,3 +123,24 @@ class InteractionHandler:
         stronger.titan_affinities += weaker_influence_on_stronger
         self.population_manager.recalculate_and_normalize_entity(stronger, global_path_distribution, cosmic_zeitgeist)
         self.population_manager.recalculate_and_normalize_entity(weaker, global_path_distribution, cosmic_zeitgeist)
+
+    def _handle_titan_battle(self, golden_one: Pathstrider, titan_boss: Pathstrider):
+        """处理金裔对其对应的泰坦的战斗。"""
+        print(f"\n\033[35m【逐火之旅】黄金裔 {golden_one.name} ({golden_one.titan_aspect}) 挑战泰坦 {titan_boss.name}！\033[0m")
+        
+        damage = golden_one.score * (0.2 + random.random() * 0.3)
+        titan_boss.hp -= damage
+        
+        print(f"{golden_one.name} 对泰坦造成了 {damage:.2f} 点伤害！泰坦剩余HP: {titan_boss.hp:.2f}")
+
+        if titan_boss.hp <= 0:
+            print(f"\033[92m泰坦 {titan_boss.name} 已被击败！黄金裔 {golden_one.name} 继承了其火种，成为半神！\033[0m")
+            golden_one.data_modification_unlocked = True
+            golden_one.score *= 1.5 
+            return titan_boss 
+        
+        if random.random() < 0.05: 
+            print(f"\033[91m泰坦发起了反击！{golden_one.name} 灰飞烟灭！\033[0m")
+            return golden_one
+            
+        return None

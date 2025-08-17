@@ -17,20 +17,17 @@ class StagnationManager:
         self.guide_optimizer = guide_optimizer
         self.initial_rl_lr = initial_rl_lr
         self.base_mutation_rate = base_mutation_rate
-        self.mutation_rate = base_mutation_rate # Initially same as base
+        self.mutation_rate = base_mutation_rate 
 
-        # Stagnation state
         self.long_term_stagnation_counter = 0
         self.score_history = [] 
         self.baie_stagnation_counter = 0
 
-        # Cosmic tide state
         self.cosmic_tide_vector = np.zeros(len(TITAN_NAMES))
         self.tide_duration = 0
         self.tide_counter = 0
 
     def check_stagnation_and_intervene(self, population: list, reincarnator: Pathstrider, last_avg_score: float, last_baie_score: float, cosmic_zeitgeist: np.ndarray):
-        # Global Stagnation Check
         if np.isfinite(last_avg_score):
             self.score_history.append(last_avg_score)
             if len(self.score_history) > LONG_TERM_STAGNATION_THRESHOLD:
@@ -48,7 +45,6 @@ class StagnationManager:
                 self.long_term_stagnation_counter = 0 
                 self.score_history = [] 
         
-        # Reincarnator Stagnation Check
         if reincarnator:
             if reincarnator.score < last_baie_score * 1.01:
                 self.baie_stagnation_counter += 1
@@ -88,8 +84,7 @@ class StagnationManager:
         reincarnator.titan_affinities[weakest_link_idx] *= 2.5
         reincarnator.titan_affinities[weakest_link_idx] += 1.0 
         
-        # Recalculation requires global context, which we now have.
-        global_dist = self.population_manager.get_global_path_distribution([]) # Pass empty list as population is not available, will be calculated from scratch. Better pass population.
+        global_dist = self.population_manager.get_global_path_distribution([]) 
         self.population_manager.recalculate_and_normalize_entity(reincarnator, None, cosmic_zeitgeist)
 
     def adjust_mutation_rate(self, population: list):
@@ -102,12 +97,10 @@ class StagnationManager:
         
         if diversity_metric < 0.25:
             self.mutation_rate = self.base_mutation_rate * 2.5
-            # Assuming generation is tracked externally and this is called each generation
             print(f"\033[33m可观测样本过低({diversity_metric:.2f})！异常变量已临时提高至 {self.mutation_rate:.3f}\033[0m")
         else:
             self.mutation_rate = self.base_mutation_rate
             
-        # Update the mutation rate in the population manager as well
         self.population_manager.mutation_rate = self.mutation_rate
         return diversity_metric
 
@@ -128,5 +121,5 @@ class StagnationManager:
         else: 
             self.cosmic_tide_vector *= 0.95
         
-        # Update the tide vector in the population manager
+        # Update the manager
         self.population_manager.cosmic_tide_vector = self.cosmic_tide_vector

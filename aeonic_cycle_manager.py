@@ -25,9 +25,10 @@ class AeonicCycleManager:
                  titan_to_path_model_instance,
                  existing_names: set,
                  name_to_entity_map: dict,
-                 # 接收LLM接口和配置
+                 # LLM接口和配置
                  llm_interface: 'CpuLlmInterface' = None,
-                 kaoselanna_llm_enabled: bool = False
+                 kaoselanna_llm_enabled: bool = False,
+                 parliament_manager = None 
                  ):
         
         self.population_manager = population_manager
@@ -43,6 +44,7 @@ class AeonicCycleManager:
         # LLM接口和配置
         self.llm_interface = llm_interface
         self.kaoselanna_llm_enabled = kaoselanna_llm_enabled
+        self.parliament_manager = parliament_manager 
 
         self.aeonic_cycle_number = 0
         self.titan_entities = {}
@@ -69,12 +71,15 @@ class AeonicCycleManager:
             try:
                 neg_world_idx = TITAN_NAMES.index("负世")
                 reincarnator.titan_affinities[neg_world_idx] *= 2.0
-                self.population_manager.recalculate_and_normalize_entity(reincarnator, self.population_manager.get_global_path_distribution(population), cosmic_zeitgeist)
+                global_dist = self.population_manager.get_global_path_distribution(population)
+                self.population_manager.recalculate_and_normalize_entity(reincarnator, global_dist, cosmic_zeitgeist)
+                multiplier = self.parliament_manager.get_zeitgeist_multiplier(reincarnator.path_affinities)
+                reincarnator.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
             except (ValueError, IndexError): pass
         for p in population:
             p.is_titan_form = None
             if p is not reincarnator: p.held_fire_seeds.clear()
-        print(f"\n--- 永劫轮回 第 {self.aeonic_cycle_number} 轮 开始 ---")
+        print(f"\n--- 永劫回归 第 {self.aeonic_cycle_number} 轮 开始 ---")
         print("卡厄斯兰那将开始夺取创世火种。")
         candidates = [p for p in population if p is not reincarnator and p.trait != "GoldenOne"]
         if len(candidates) < len(TITAN_NAMES):
@@ -89,7 +94,10 @@ class AeonicCycleManager:
             self.titan_entities[titan_name] = entity
             titan_idx = titan_indices[titan_name]
             entity.titan_affinities[titan_idx] = entity.titan_affinities[titan_idx] * 5.0 + 200
-            self.population_manager.recalculate_and_normalize_entity(entity, self.population_manager.get_global_path_distribution(population), cosmic_zeitgeist)
+            global_dist = self.population_manager.get_global_path_distribution(population)
+            self.population_manager.recalculate_and_normalize_entity(entity, global_dist, cosmic_zeitgeist)
+            multiplier = self.parliament_manager.get_zeitgeist_multiplier(entity.path_affinities)
+            entity.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
             print(f"实体 {entity.name} 已化身为 [{titan_name}] 泰坦。")
         return True 
 
@@ -159,9 +167,9 @@ class AeonicCycleManager:
                     
                     if decision_data.get('action') in ["击杀", "谈判"]:
                         chosen_action = decision_data['action']
-                        print(f"\033[91m【卡厄斯兰那的意志】: \"{decision_data.get('declaration', '...')}\"\033[0m")
+                        print(f"\033[91m【卡厄斯兰那】: \"{decision_data.get('declaration', '...')}\"\033[0m")
                 except (json.JSONDecodeError, KeyError, Exception) as e:
-                    print(f"\033[93m(警告: 卡厄斯兰那的内在神识出现波动(错误:{e})，决策回归本能...)\033[0m")
+                    print(f"\033[93m(警告: 卡厄斯兰那-LLM出现波动(错误:{e})，决策回归本能...)\033[0m")
                     chosen_action = None
 
             if chosen_action is None:
@@ -222,7 +230,7 @@ class AeonicCycleManager:
                 defender.is_titan_form = None
                 culled_entity = defender
 
-            # 神经网络更新
+            # 网络更新
             advantage = final_reward - state_value.item()
             self.value_optimizer.zero_grad()
             value_loss = self.value_loss_criterion(state_value, torch.tensor([[final_reward]], dtype=torch.float))
@@ -232,7 +240,6 @@ class AeonicCycleManager:
             action_logits = self.action_policy_network(state)
             action_probs = torch.softmax(action_logits, dim=-1)
             action_dist = torch.distributions.Categorical(action_probs)
-            # 找到chosen_action对应的索引
             action_list = ["谈判", "击杀"]
             chosen_action_idx_tensor = torch.tensor([action_list.index(chosen_action)])
             log_prob = action_dist.log_prob(chosen_action_idx_tensor)
@@ -269,7 +276,10 @@ class AeonicCycleManager:
         if culled_this_gen and reincarnator and reincarnator in population and reincarnator not in culled_this_gen:
             boost_factor = (1.005) ** len(culled_this_gen)
             reincarnator.titan_affinities *= boost_factor
-            self.population_manager.recalculate_and_normalize_entity(reincarnator, self.population_manager.get_global_path_distribution(population), cosmic_zeitgeist)
+            global_dist = self.population_manager.get_global_path_distribution(population)
+            self.population_manager.recalculate_and_normalize_entity(reincarnator, global_dist, cosmic_zeitgeist)
+            multiplier = self.parliament_manager.get_zeitgeist_multiplier(reincarnator.path_affinities)
+            reincarnator.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
         
         if culled_this_gen:
             culled_names = {p.name for p in culled_this_gen}
@@ -294,7 +304,7 @@ class AeonicCycleManager:
         print(f"卡厄斯兰那集齐了所有 {len(TITAN_NAMES)} 个火种！第 {self.aeonic_cycle_number} 轮轮回结束！")
         print(f"本轮毁灭倾向评分: {self.baie_destruction_score:.2f}")
         print("==================================================================\033[0m")
-        if self.aeonic_cycle_number > 33550336 and random.random() < 0.0000001:
+        if self.aeonic_cycle_number > 33550336 or random.random() < 0.0000001:
             print("\n\n\033[91m!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             print("!!! 【警告：主线程受到冲击，演算已暂停】                                         ")
             print("!!! 卡厄斯兰那的无尽杀戮与轮回，最终突破了翁法罗斯，为屏幕前的你带来了烩面...                ")
@@ -311,11 +321,20 @@ class AeonicCycleManager:
             new_kaoselanna = self._ascend_baie_as_reincarnator(reincarnator, population)
             if new_kaoselanna:
                 reincarnator = new_kaoselanna
+                global_dist = self.population_manager.get_global_path_distribution(population)
+                multiplier = self.parliament_manager.get_zeitgeist_multiplier(reincarnator.path_affinities)
+                reincarnator.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
+
                 base_titan_affinities[:] = reincarnator.titan_affinities.copy()
                 self.population_manager.normalize_affinities(base_titan_affinities)
                 self.repopulate_for_new_cycle(population, reincarnator, base_titan_affinities, mutation_rate, population_soft_cap, cosmic_zeitgeist)
             else:
                 if reincarnator:
+                    # 调用 recalculate_concepts
+                    global_dist = self.population_manager.get_global_path_distribution(population)
+                    multiplier = self.parliament_manager.get_zeitgeist_multiplier(reincarnator.path_affinities)
+                    reincarnator.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
+
                     base_titan_affinities[:] = reincarnator.titan_affinities.copy()
                     self.population_manager.normalize_affinities(base_titan_affinities)
                     self.repopulate_for_new_cycle(population, reincarnator, base_titan_affinities, mutation_rate, population_soft_cap, cosmic_zeitgeist)
@@ -325,6 +344,12 @@ class AeonicCycleManager:
 
     def _ascend_baie_as_reincarnator(self, reincarnator: Pathstrider, population: list):
         golden_ones = [p for p in population if p.trait == "GoldenOne"]
+        print(f"\033[94m[DEBUG] 当前黄金裔数量: {len(golden_ones)}\033[0m")
+        if golden_ones:
+            for go in golden_ones:
+                neg_world_affinity = go.titan_affinities[TITAN_NAMES.index("负世")] if "负世" in TITAN_NAMES else -1
+                print(f"\033[94m[DEBUG] 黄金裔: {go.name}, 评分: {go.score:.2f}, 负世亲和: {neg_world_affinity:.2f}\033[0m")
+
         if not golden_ones:
             print("\033[93m警告: 白厄在本次轮回中没有去当黄金裔。轮回中断，系统将尝试重塑。 \033[0m")
             candidates = [p for p in population if p is not reincarnator]
@@ -332,14 +357,16 @@ class AeonicCycleManager:
                 print("\033[91m致命错误：白厄在本次模拟中未出现！\033[0m")
                 return None
             new_host = max(candidates, key=lambda p:p.score)
+            print(f"\033[94m[DEBUG] 从非黄金裔中选择新白厄: {new_host.name}, 评分: {new_host.score:.2f}\033[0m")
         else:
             try:
                 neg_world_idx = TITAN_NAMES.index("负世")
                 new_host = max(golden_ones, key=lambda p: p.titan_affinities[neg_world_idx])
-                print(f"\03.3[96m在黄金裔中，{new_host.name} 是这个轮回的白厄，开始数据继承...\033[0m")
+                print(f"\033[96m在黄金裔中，{new_host.name} 是这个轮回的白厄，开始数据继承...\033[0m")
             except (ValueError, IndexError):
                 print("\033[93m警告: 未定义'负世'泰坦，将从黄金裔中选择评分最高者。 \033[0m")
                 new_host = max(golden_ones, key=lambda p: p.score)
+            print(f"\033[94m[DEBUG] 从黄金裔中选择新白厄: {new_host.name}, 评分: {new_host.score:.2f}\033[0m")
         
         old_reincarnator_affinities = reincarnator.titan_affinities.copy() if reincarnator else self.population_manager.base_titan_affinities.copy()
         

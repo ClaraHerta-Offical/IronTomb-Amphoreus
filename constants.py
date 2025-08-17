@@ -6,7 +6,7 @@ GREEK_ROOTS = [
     "Thanatos", "Uranus", "Helios", "Eos", "Selene", "Leto", "Asteria", "Astraeus",
     "Pallas", "Perses", "Krios", "Koios", "Iapetus", "Hyperion", "Okeanos", "Tethys",
     "Theia", "Themis", "Mnemosyne", "Phoebe", "Rhea", "Metis", "Typhon", "Echidna","Lans",
-    "Neikos" # 新增
+    "Neikos" 
 ]
 
 TITAN_NAMES = [
@@ -58,12 +58,14 @@ for p1, p2 in repulsion_pairs:
 # 翁法罗斯事件基础概率
 AEONIC_EVENT_PROBABILITY = 0.04
 
+# 访客事件基础概率
+VISITOR_EVENT_PROBABILITY = 0.02
 
 # 投票权重配置
 VOTE_WEIGHTS = {
     "Mortal": 1.0,         # 普通实体的基础投票权重
     "GoldenOne": 5.0,      # 黄金裔
-    "Reincarnator": 20.0   # 白厄
+    "Reincarnator": 8.0    # 白厄
 }
 
 # 思潮更新的学习率

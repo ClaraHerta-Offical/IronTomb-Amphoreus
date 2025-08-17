@@ -7,6 +7,16 @@ class PolicySaver:
         self.action_policy_network = action_policy_network
         self.value_network = value_network
 
+    # V 新增方法 V
+    def save_organic_model(self, model: nn.Module, path="organic_prototype_model.pth"):
+        """保存有机阶段的原型模型。"""
+        try:
+            torch.save(model.state_dict(), path)
+            print(f"\n\033[92m有机原型模型已成功导出至: {path}\033[0m")
+        except Exception as e:
+            print(f"\n\033[91m错误: 无法保存有机原型模型。原因: {e}\033[0m")
+    # ^ 新增方法 ^
+
     def save_policy_models(self, blueprint_path="blueprint_policy.pth", action_path="baie_action_policy.pth", value_path="baie_value_policy.pth"):
         try:
             torch.save(self.guide_network.state_dict(), blueprint_path)

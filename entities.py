@@ -1,5 +1,6 @@
 import numpy as np
-from constants import PATH_NAMES, PATH_RELATIONSHIP_MATRIX, path_idx, VOTE_WEIGHTS
+from constants import PATH_NAMES, PATH_RELATIONSHIP_MATRIX, path_idx, VOTE_WEIGHTS, TITAN_NAMES
+import math
 from models import TitanToPathModel
 
 class Pathstrider:
@@ -12,9 +13,13 @@ class Pathstrider:
         self.heroic_tendency = 0
         self._path_affinities = None
         
-        # score 动态计算，初始值0
-        self.score = 0 
+        self.score = 0
         
+        self.hp = 100.0  # 仅对泰坦有意义
+        self.is_titan_boss = False
+        self.titan_aspect = None  
+        self.data_modification_unlocked = False
+
         self.activity = 0
         self.stability = 0
         
@@ -24,7 +29,6 @@ class Pathstrider:
             self.is_titan_form = None  
         self.held_fire_seeds = set() 
 
-        self.recalculate_concepts()
 
     @property
     def path_affinities(self):
@@ -42,11 +46,11 @@ class Pathstrider:
         if np.sum(path_affs) == 0: return 0
         return np.max(path_affs) / np.sum(path_affs)
 
-    def recalculate_concepts(self, path_distribution=None, cosmic_zeitgeist=None):
+    def recalculate_concepts(self, zeitgeist_multiplier=1.0, path_distribution=None):
         """
-        重新计算实体的所有衍生概念，包括新的动态评分。
+        根据新的议会和评分机制重新计算。
+        - zeitgeist_multiplier: 由 ParliamentManager 计算出的全局乘数
         - path_distribution: 全局的命途饱和度分布
-        - cosmic_zeitgeist: 当前的思潮向量
         """
         if not np.all(np.isfinite(self.titan_affinities)):
             self.titan_affinities = np.ones(len(self.titan_affinities))
@@ -58,20 +62,18 @@ class Pathstrider:
         
         base_potential = (self.activity + self.stability) * (1 + self.purity)
 
-        if cosmic_zeitgeist is not None:
-            # 实体命途与思潮的契合度
-            contextual_multiplier = 1 + np.dot(self.path_affinities, cosmic_zeitgeist)
-        else:
-            contextual_multiplier = 1.0
-
+        # 饱和度惩罚
+        saturation_modifier = 1.0
         if path_distribution is not None:
             dominance_penalty_factor = path_distribution[self.dominant_path_idx]
-            # 饱和度越高，修正因子越小
             saturation_modifier = 1.0 / (1.0 + 2 * dominance_penalty_factor)
-        else:
-            saturation_modifier = 1.0
 
-        self.score = base_potential * max(0.1, contextual_multiplier) * saturation_modifier
+        # 评分公式：基础潜力 * 饱和度修正 * 思潮乘数
+        self.score = base_potential * saturation_modifier * zeitgeist_multiplier
+        
+        # 如果是泰坦，评分获得加成
+        if self.is_titan_boss:
+            self.score *= 5.0
 
         self.heroic_tendency = self.activity
 
@@ -123,23 +125,23 @@ class Pathstrider:
         dominant_path_name = PATH_NAMES[self.dominant_path_idx]
         
         tags = []
-        if self.trait == "Reincarnator":
-            if self.name == "Neikos-0496":
-                tags.append("白厄")
-            else:
-                tags.append("卡厄斯兰那")
+        if self.is_titan_boss:
+            tags.append(f"泰坦真身: {self.titan_aspect} (HP: {self.hp:.0f})")
+        elif self.trait == "Reincarnator":
+            tags.append("卡厄斯兰那" if self.name != "Neikos-0496" else "白厄")
         elif self.trait == "GoldenOne":
-            tags.append(f"黄金裔(任期:{self.golden_one_tenure})")
-        
-        if self.is_titan_form:
-            tags.append(f"泰坦化身: {self.is_titan_form}")
+            if self.titan_aspect:
+                status = "权限已解锁" if self.data_modification_unlocked else "待解锁"
+                tags.append(f"黄金裔({self.titan_aspect}, {status})")
+            else:
+                tags.append(f"黄金裔(任期:{self.golden_one_tenure})")
+
+        if self.is_titan_form: 
+            tags.append(f"泰坦: {self.is_titan_form}")
         
         if self.held_fire_seeds:
             tags.append(f"火种({len(self.held_fire_seeds)})")
 
-        if not tags:
-            tag_str = f"'{dominant_path_name}'的追随者"
-        else:
-            tag_str = ", ".join(tags)
+        tag_str = ", ".join(tags) if tags else f"'{dominant_path_name}'的追随者"
 
-        return f"[{self.name}] <{tag_str}>(评分:{self.score:.2f}|纯:{self.purity:.2f}|最强命途:{dominant_path_name}:{self.path_affinities[self.dominant_path_idx]:.2f})"
+        return f"[{self.name}] <{tag_str}>(评分:{self.score:.2f}|纯:{self.purity:.2f})"

@@ -9,11 +9,13 @@ import torch
 import torch.optim as optim
 import time
 
-# --- 本地模块导入 ---
+# --- 在顶部导入新模块 ---
+from parliament_manager import ParliamentManager
+from visitor_manager import VisitorManager
 from constants import (
     TITAN_NAMES, PATH_NAMES, 
     PATH_RELATIONSHIP_MATRIX, PATH_INTERACTION_MATRIX, AEONIC_EVENT_PROBABILITY,
-    ZEITGEIST_UPDATE_RATE
+    ZEITGEIST_UPDATE_RATE, VISITOR_EVENT_PROBABILITY
 )
 from models import TitanToPathModel, HybridGuideNetwork, ValueNetwork, ActionPolicyNetwork
 from entities import Pathstrider
@@ -96,6 +98,20 @@ class AeonEvolution:
         # --- 模式标志 ---
         self.aeonic_cycle_mode = False
 
+        # --- 属性和管理器 ---
+        self.simulation_weights = {
+            "mutation_rate": mutation_rate,
+            "growth_factor": growth_factor,
+            "culling_strength": culling_strength,
+            "target_avg_score": target_avg_score,
+            "visitor_prob": VISITOR_EVENT_PROBABILITY
+        }
+        
+        self.parliament_manager = ParliamentManager()
+        self.visitor_manager = VisitorManager(self.simulation_weights)
+        
+        self.titan_bosses = []
+
         # --- 管理器实例化 ---
         self.debugger = Debugger(self)
         self.display_manager = DisplayManager()
@@ -139,7 +155,8 @@ class AeonEvolution:
             existing_names=self.existing_names,
             name_to_entity_map=self.name_to_entity_map,
             llm_interface=self.llm_interface,
-            kaoselanna_llm_enabled=self.kaoselanna_llm_enabled
+            kaoselanna_llm_enabled=self.kaoselanna_llm_enabled,
+            parliament_manager=self.parliament_manager # 新增
         )
         self.policy_saver = PolicySaver(
             guide_network=self.guide_network,
@@ -151,7 +168,7 @@ class AeonEvolution:
         if not self.llm_interface or not self.llm_interface.llm:
             return
 
-        # --- 吟游诗人  ---
+        # --- 吟游诗人 ---
         if self.bard_frequency > 0 and self.generation % self.bard_frequency == 0:
             dominant_path = PATH_NAMES[np.argmax(self.cosmic_zeitgeist)]
             prompt = (
@@ -163,7 +180,7 @@ class AeonEvolution:
             narrative = self.llm_interface.generate_response(prompt, max_tokens=100)
             print(f"\n\033[35m【吟游诗篇 (Gen {self.generation})】: {narrative}\033[0m")
 
-        # --- 来古士 (Laertes) ---
+        # --- 来古士 ---
         if self.laertes_frequency > 0 and self.generation % self.laertes_frequency == 0:
             diversity_metric = len(set(p.dominant_path_idx for p in self.population)) / len(PATH_NAMES)
             strongest_entity = max(self.population, key=lambda p: p.score) if self.population else None
@@ -177,21 +194,30 @@ class AeonEvolution:
             commentary = self.llm_interface.generate_response(prompt, max_tokens=100)
             print(f"\033[96m【来古士的沉思】: {commentary}\033[0m")
             
-    def _create_initial_population(self):
+    def _create_initial_population(self, create_reincarnator=True):
+        """
+        创建初始种群，并根据新议会机制初始化其状态。
+        """
         self.population_manager.create_initial_population(self.population_soft_cap, self.population, self.cosmic_zeitgeist)
         
-        self._update_cosmic_zeitgeist()
+        if not self.population:
+             return
+
+        self.parliament_manager.hold_election(self.population)
+        
+        # 为所有初始实体计算第一次评分
         global_dist = self.population_manager.get_global_path_distribution(self.population)
         for p in self.population:
-            p.recalculate_concepts(global_dist, self.cosmic_zeitgeist)
+            multiplier = self.parliament_manager.get_zeitgeist_multiplier(p.path_affinities)
+            p.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
 
-        if not self.population: return
-
-        reincarnator_idx = np.random.randint(0, len(self.population))
-        self.population[reincarnator_idx].trait = "Reincarnator"
-        self.reincarnator = self.population[reincarnator_idx]
+        if create_reincarnator:
+            reincarnator_idx = np.random.randint(0, len(self.population))
+            self.population[reincarnator_idx].trait = "Reincarnator"
+            self.reincarnator = self.population[reincarnator_idx]
+            self.last_baie_score = self.reincarnator.score
+        
         self.highest_avg_score = np.mean([p.score for p in self.population]) if self.population else 0
-        self.last_baie_score = self.reincarnator.score
 
     def _update_max_affinity_norm(self):
         population_for_norm_calc = [p for p in self.population if p is not self.reincarnator and np.isfinite(p.score)]
@@ -213,28 +239,6 @@ class AeonEvolution:
         if self.generation % 10 == 0:
             print(f"\033[36m宏观调控: 命途能量上限调整为 {self.population_manager.max_affinity_norm:.2f} (当前均: {current_avg_score:.2f} / 目标: {self.target_avg_score:.2f})\033[0m")
 
-    def _update_cosmic_zeitgeist(self):
-        if not self.population: return
-        total_weighted_votes = np.zeros(len(PATH_NAMES))
-        total_weight = 0
-        for entity in self.population:
-            vote_proposal = entity.generate_vote_proposal()
-            vote_weight = entity.get_vote_weight() * entity.score
-            total_weighted_votes += vote_proposal * vote_weight
-            total_weight += vote_weight
-        
-        if total_weight == 0: return
-        current_vote_result = total_weighted_votes / total_weight
-        self.cosmic_zeitgeist = (self.cosmic_zeitgeist * (1 - ZEITGEIST_UPDATE_RATE) + current_vote_result * ZEITGEIST_UPDATE_RATE)
-        
-        global_dist = self.population_manager.get_global_path_distribution(self.population)
-        for p in self.population:
-            p.recalculate_concepts(global_dist, self.cosmic_zeitgeist)
-            
-        if self.generation % 10 == 0:
-            dominant_zeitgeist_idx = np.argmax(self.cosmic_zeitgeist)
-            dominant_zeitgeist_name = PATH_NAMES[dominant_zeitgeist_idx]
-            print(f"\033[32m思潮更新: 当前时代的主流是 '{dominant_zeitgeist_name}' (权重: {self.cosmic_zeitgeist[dominant_zeitgeist_idx]:.3f})\033[0m")
 
     def _guide_reincarnator_to_destruction(self):
         if not self.reincarnator or not self.reincarnator in self.population: return
@@ -250,8 +254,25 @@ class AeonEvolution:
             
             global_dist = self.population_manager.get_global_path_distribution(self.population)
             self.population_manager.recalculate_and_normalize_entity(self.reincarnator, global_dist, self.cosmic_zeitgeist)
+            
+            multiplier = self.parliament_manager.get_zeitgeist_multiplier(self.reincarnator.path_affinities)
+            self.reincarnator.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
+
         except (ValueError, IndexError): 
             pass
+
+    def _apply_law_titan_power(self):
+        try:
+            law_golden_one = next(p for p in self.population if p.titan_aspect == "律法" and p.data_modification_unlocked)
+            if law_golden_one:
+                param_to_modify = random.choice(list(self.simulation_weights.keys()))
+                change_factor = 1.0 + random.uniform(-0.05, 0.05)
+                original_value = self.simulation_weights[param_to_modify]
+                self.simulation_weights[param_to_modify] *= change_factor
+                print(f"\n\033[36m【权柄发动】'律法'黄金裔 {law_golden_one.name} 修改了演算规则！")
+                print(f"参数 '{param_to_modify}' 从 {original_value:.3f} 变为 {self.simulation_weights[param_to_modify]:.3f}\033[0m")
+        except StopIteration:
+            pass # 没有满足条件的“律法”黄金裔
 
     def _check_for_aeonic_events(self, culled_this_gen):
         if random.random() < self.aeonic_event_prob:
@@ -270,12 +291,16 @@ class AeonEvolution:
                 for p in self.population:
                     p.titan_affinities += self.titan_to_path_model_instance.titan_to_path_matrix[:, empowered_path_idx] * 2.0
                     self.population_manager.recalculate_and_normalize_entity(p, global_dist, self.cosmic_zeitgeist)
+                    multiplier = self.parliament_manager.get_zeitgeist_multiplier(p.path_affinities)
+                    p.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
             elif event_type == "awakening":
                 awakened_titan_idx = random.randrange(len(TITAN_NAMES))
                 print(f"\n\033[91m【翁法罗斯事件: 泰坦回响】泰坦 '{TITAN_NAMES[awakened_titan_idx]}' 的概念浸染了所有实体！\033[0m")
                 for p in self.population:
                     p.titan_affinities[awakened_titan_idx] *= 2.5
                     self.population_manager.recalculate_and_normalize_entity(p, global_dist, self.cosmic_zeitgeist)
+                    multiplier = self.parliament_manager.get_zeitgeist_multiplier(p.path_affinities)
+                    p.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
 
     def _apply_path_feedback(self):
         if not self.population: return
@@ -321,29 +346,20 @@ class AeonEvolution:
 
     def _run_one_generation(self):
         num_golden_ones = len([p for p in self.population if p.trait == "GoldenOne"])
-        print(f"\n--- 世代 {self.generation}/{self.total_generations} | 实体数目:{len(self.population)} | 黄金裔:{num_golden_ones} ---")
-        
-        self._trigger_llm_narrators()
-        
-        self.stagnation_manager.update_cosmic_tide()
-        self._update_cosmic_zeitgeist() 
-        self._apply_path_feedback()
-        self._guide_reincarnator_to_destruction() 
-        
-        culled_this_gen = set()
-        self._check_for_aeonic_events(culled_this_gen)
-        
-        self.stagnation_manager.check_stagnation_and_intervene(
-            population=self.population,
-            reincarnator=self.reincarnator, 
-            last_avg_score=self.last_avg_score,
-            last_baie_score=self.last_baie_score,
-            cosmic_zeitgeist=self.cosmic_zeitgeist
-        )
-        self.last_baie_score = self.reincarnator.score if self.reincarnator else 0
-        
-        num_encounters = min(int(2 * len(self.population)), 5000)
+        print(f"\n--- 世代 {self.generation}/{self.total_generations} | 实体:{len(self.population)} | 黄金裔:{num_golden_ones} | 泰坦Boss:{len(self.titan_bosses)} ---")
+        self.visitor_manager.trigger_event()   
+        # 议会选举
+        self.parliament_manager.hold_election(self.population)
+
+        # 重新计算所有实体分数
         global_dist = self.population_manager.get_global_path_distribution(self.population)
+        for p in self.population:
+            multiplier = self.parliament_manager.get_zeitgeist_multiplier(p.path_affinities)
+            p.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
+
+        # 交互
+        culled_this_gen = set()
+        num_encounters = min(int(2 * len(self.population)), 5000)
         for _ in range(num_encounters):
             valid_population = [p for p in self.population if p not in culled_this_gen]
             if len(valid_population) < 2: break
@@ -352,11 +368,15 @@ class AeonEvolution:
             if not entity1 or not entity2: continue
             
             if entity1 not in culled_this_gen and entity2 not in culled_this_gen:
+                multiplier1 = self.parliament_manager.get_zeitgeist_multiplier(entity1.path_affinities)
                 culled_entity = self.interaction_handler.entity_interaction(
-                    entity1, entity2, self.population, self.reincarnator, global_dist, self.cosmic_zeitgeist
+                    entity1, entity2, self.population, self.reincarnator, global_dist, self.cosmic_zeitgeist, multiplier1
                 )
-                if culled_entity and culled_entity.trait != "Reincarnator":
+                if culled_entity:
                     culled_this_gen.add(culled_entity)
+        
+        # 律法半神发动权柄
+        self._apply_law_titan_power()
                     
         print(f"世代 {self.generation} 演算结束。")
         return culled_this_gen
@@ -372,7 +392,11 @@ class AeonEvolution:
                 best_host = max(potential_hosts, key=lambda p:p.score)
                 self.reincarnator.titan_affinities = (best_host.titan_affinities + np.random.normal(0, self.population_manager.mutation_rate * 0.5, self.base_titan_affinities.shape)).clip(min=0)
                 self.reincarnator.titan_affinities *= 1.05
-                self.population_manager.recalculate_and_normalize_entity(self.reincarnator, self.population_manager.get_global_path_distribution(self.population), self.cosmic_zeitgeist)
+                global_dist = self.population_manager.get_global_path_distribution(self.population)
+                self.population_manager.recalculate_and_normalize_entity(self.reincarnator, global_dist, self.cosmic_zeitgeist)
+                
+                multiplier = self.parliament_manager.get_zeitgeist_multiplier(self.reincarnator.path_affinities)
+                self.reincarnator.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
                 print(f"卡厄斯兰那已重生: {self.reincarnator}")
         
         if culled_this_gen:
@@ -442,40 +466,128 @@ class AeonEvolution:
             strongest = max(self.population, key=lambda p: p.score)
             print(f"\033[95m当前最强者: {strongest}\033[0m")
 
-    def _run_inorganic_phase(self, num_generations=50, activity_threshold=15.0):
+    def _run_inorganic_phase(self, num_generations=50121, activity_threshold=15.0):
         print("\n=== 进入无机实体培养阶段 ===")
-        print("...正在演化纯粹的“活性”与“稳定性”概念...")
-        inorganic_pop = [{'id': i, 'activity': random.uniform(1,5), 'stability': random.uniform(1,5)} for i in range(100)]
+        print("...正在通过类元胞自动机演化“活性”与“稳定性”概念...")
+        
+        # 初始化一个10x10的网格作为元胞空间
+        grid_size = 10
+        inorganic_pop = [{'id': i*grid_size+j, 'activity': random.uniform(1,5), 'stability': random.uniform(1,5), 'score': 0} for i in range(grid_size) for j in range(grid_size)]
+        
         for gen in range(num_generations + 1):
             self.display_manager.update_and_display_progress('inorganic', gen, num_generations)
-            time.sleep(0.05)
+            if gen % 100 == 0: 
+                 self.display_manager.update_and_display_progress('inorganic', gen, num_generations)
+            
             if gen == num_generations: break
-            for p in inorganic_pop: p['score'] = p['activity'] + p['stability']
-            inorganic_pop.sort(key=lambda x: x['score'], reverse=True)
-            survivors = inorganic_pop[:50]
-            if survivors and survivors[0]['activity'] > activity_threshold:
-                best_prototype = survivors[0]
-                self.display_manager.update_and_display_progress('inorganic', num_generations, num_generations)
-                print(f"\n\033[92m>>> 原型验证完成! 发现高活性实体 (ID: {best_prototype['id']})! <<<\n>>> 数据: 活性={best_prototype['activity']:.2f}, 稳定性={best_prototype['stability']:.2f}\n>>> 基于原型，已将目标平均分调整为: {self.target_avg_score:.2f} <<<\033[0m")
-                return
-            new_pop = list(survivors)
-            for _ in range(50):
-                parent = random.choice(survivors) if survivors else {'activity': random.uniform(1,5), 'stability': random.uniform(1,5)}
-                new_entity = {'id': len(new_pop) + gen*100, 'activity': parent['activity'] + random.uniform(-0.5, 0.8), 'stability': parent['stability'] + random.uniform(-0.5, 0.5)}
-                new_pop.append(new_entity)
+
+            new_pop = list(inorganic_pop)
+
+            for i in range(grid_size):
+                for j in range(grid_size):
+                    idx = i * grid_size + j
+                    current_cell = inorganic_pop[idx]
+                    
+                    # 计算邻居的平均影响
+                    neighbor_activity_sum = 0
+                    neighbor_stability_sum = 0
+                    neighbor_count = 0
+                    for di in [-1, 0, 1]:
+                        for dj in [-1, 0, 1]:
+                            if di == 0 and dj == 0: continue
+                            ni, nj = i + di, j + dj
+                            if 0 <= ni < grid_size and 0 <= nj < grid_size:
+                                neighbor_idx = ni * grid_size + nj
+                                neighbor_activity_sum += inorganic_pop[neighbor_idx]['activity']
+                                neighbor_stability_sum += inorganic_pop[neighbor_idx]['stability']
+                                neighbor_count += 1
+                    
+                    avg_neighbor_activity = neighbor_activity_sum / neighbor_count if neighbor_count > 0 else 0
+                    avg_neighbor_stability = neighbor_stability_sum / neighbor_count if neighbor_count > 0 else 0
+
+                    # 受邻居影响，并有小幅随机突变
+                    activity_change = (avg_neighbor_activity - current_cell['activity']) * 0.1 + random.uniform(-0.1, 0.1)
+                    stability_change = (avg_neighbor_stability - current_cell['stability']) * 0.1 + random.uniform(-0.1, 0.1)
+                    
+                    new_cell = new_pop[idx]
+                    new_cell['activity'] = max(0, current_cell['activity'] + activity_change)
+                    new_cell['stability'] = max(0, current_cell['stability'] + stability_change)
+                    new_cell['score'] = new_cell['activity'] + new_cell['stability']
+
             inorganic_pop = new_pop
-        print("\n\033[93m警告: 未能在无机阶段发现高活性原型，将使用默认参数开始演算。\033[0m")
+
+        self.display_manager.update_and_display_progress('inorganic', num_generations, num_generations)
+        print("\n\033[91m!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("!!! 【警告：侦测到异常概念原型】                                       ")
+        print("!!! 在第 50121 次无机推演后，实体 Chaoz666 表现出无法理解的特征。     ")
+        print("!!! 其“活性”数据溢出，呈现出混沌和毁灭的混合倾向。                  ")
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\033[0m")
         
+        print("\n\033[92m>>> 无机阶段演算完成! 原型概念模型已释放，将作为后续演化的基础。 <<<\033[0m")
+        
+    # 有机阶段方法 
+    def _run_organic_phase(self, start_gen, end_gen):
+        print("\n\n=== 进入有机实体孕育阶段 ===")
+        print("...基于无机演化的数据，正在训练初始概念模型...")
+        
+        class OrganicProtoNet(nn.Module):
+            def __init__(self):
+                super(OrganicProtoNet, self).__init__()
+                self.layer = nn.Linear(10, 10)
+            def forward(self, x):
+                return torch.relu(self.layer(x))
+
+        organic_model = OrganicProtoNet()
+        optimizer = optim.SGD(organic_model.parameters(), lr=0.01)
+        
+        for i in range(101):
+            optimizer.zero_grad()
+            loss = torch.randn(1)
+            loss.backward()
+            optimizer.step()
+            sys.stdout.write(f"\r模型训练中... {i}%")
+            sys.stdout.flush()
+            time.sleep(0.02)
+        print("\n初始模型训练完成。")
+
+        print("...开始模拟初始有机体交互...")
+        for gen in range(start_gen, end_gen + 1):
+            self.generation = gen
+            self.display_manager.update_and_display_progress('organic', gen, end_gen)
+            
+            if gen % 10000 == 0:
+                bytecode_sample = ' '.join([f'{random.randint(0, 255):02X}' for _ in range(16)])
+                print(f"\n\033[33m[Gen {gen}] 原型机输出字节码: {bytecode_sample}\033[0m")
+            
+            if len(self.population) > 100:
+                self.population.sort(key=lambda p: p.score)
+                self.population.pop(0) # 每代淘汰最弱者
+
+            if self.debugger.paused: return 
+        
+        print("\n\n\033[92m>>> 有机孕育阶段完成! 概念原型机已固化。 <<<\033[0m")
+        self.policy_saver.save_organic_model(organic_model)
+
     def start(self, num_generations=80):
-        self._run_inorganic_phase()
-        print("\n\n>>> 正式演算开始... <<<")
-        self._create_initial_population()
-        self.total_generations = num_generations
-        
-        KAOSELANNA_PHASE_END_SCORE = 18.45
+        # --- 定义演算 ---
+        INORGANIC_PHASE_END = 50121
+        ORGANIC_PHASE_END = 176199
+        HUMAN_PHASE_END = 28371273
+        TOTAL_SIMULATION_END = 33550336
+
+        self.total_generations = TOTAL_SIMULATION_END
         was_paused = False
 
-        while self.generation < num_generations:
+        self._run_inorganic_phase(num_generations=INORGANIC_PHASE_END)
+        self._create_initial_population(create_reincarnator=False) 
+
+        self.generation = INORGANIC_PHASE_END + 1
+        self._run_organic_phase(self.generation, ORGANIC_PHASE_END)
+        
+        print("\n\n>>> 凡人时代开启...演化正在无引导地进行... <<<")
+        self.generation = ORGANIC_PHASE_END + 1
+
+        while self.generation <= TOTAL_SIMULATION_END:
             # --- Debugger 钩子 ---
             if self.debugger.paused:
                 if not was_paused:
@@ -488,18 +600,36 @@ class AeonEvolution:
                 print("\n=== 模拟已恢复 ===")
                 was_paused = False
 
-            # --- PTL ---
-            if not self.aeonic_cycle_mode and self.reincarnator and self.reincarnator.score > KAOSELANNA_PHASE_END_SCORE:
-                self.aeonic_cycle_manager.trigger_aeonic_cycle_countdown(self.reincarnator)
-                self.display_manager.display_interruption_animation()
-                if self.aeonic_cycle_manager.initialize_aeonic_cycle(self.reincarnator, self.population, self.cosmic_zeitgeist):
-                    self.aeonic_cycle_mode = True
-                else:
-                    self.aeonic_cycle_mode = False
+            if self.generation > ORGANIC_PHASE_END + 1: # 从第二代开始
+                # 将上一代的12位黄金裔变为泰坦Boss
+                last_gen_titans = [p for p in self.population if p.titan_aspect and p.trait == "GoldenOne"]
+                self.titan_bosses.clear()
+                for titan_to_be in last_gen_titans:
+                    titan_to_be.is_titan_boss = True
+                    titan_to_be.trait = "Mortal" 
+                    titan_to_be.hp = 250.0 + titan_to_be.score
+                    self.titan_bosses.append(titan_to_be)
+                
+                self.population_manager.update_golden_ones(self.population)
 
-            # --- ML ---
+            if not self.aeonic_cycle_mode and self.generation >= HUMAN_PHASE_END:
+                self.display_manager.display_interruption_animation()
+                print("\n\033[91m【系统过载：因果律重构】\n翁法罗斯在 'Neikos-0496' 的奇点下崩溃...\n以 '负世' 权柄为核心...新的轮回即将开始！\033[0m")
+                
+                try:
+                    neg_world_golden_one = next(p for p in self.population if p.titan_aspect == "负世")
+                    self.reincarnator = neg_world_golden_one
+                except StopIteration:
+                    self.reincarnator = max(self.population, key=lambda p: p.score)
+
+                self.reincarnator.trait = "Reincarnator"
+                self.reincarnator.name = "Neikos-0496"
+            
+            # --- 循环逻辑 ---
             if self.aeonic_cycle_mode:
                 self.aeonic_cycle_manager.run_aeonic_cycle_generation(self.population, self.reincarnator, self.cosmic_zeitgeist)
+                
+                # 检查轮回结束条件
                 if self.reincarnator and len(self.reincarnator.held_fire_seeds) >= len(TITAN_NAMES):
                     should_end_simulation = self.aeonic_cycle_manager.end_aeonic_cycle(
                         self.reincarnator, self.population, self.base_titan_affinities,
@@ -507,14 +637,15 @@ class AeonEvolution:
                     )
                     if should_end_simulation: break
                 
-                self.display_manager.update_and_display_progress('cycle', self.aeonic_cycle_manager.aeonic_cycle_number, 10)
-            else:
-                self.generation += 1
+                self.display_manager.update_and_display_progress('cycle', self.aeonic_cycle_manager.aeonic_cycle_number, 1000) # 更新进度条
+            
+            else: 
                 culled_this_gen = self._run_one_generation()
                 self._evolve_and_grow(culled_this_gen)
-                current_kaos_score = self.reincarnator.score if self.reincarnator else 0
-                self.display_manager.update_and_display_progress('normal', current_kaos_score, KAOSELANNA_PHASE_END_SCORE)
+                self.display_manager.update_and_display_progress('normal', self.generation, HUMAN_PHASE_END)
             
+            self.generation += 1
+
             if not self.population: 
                 print("\n种群已灭绝！")
                 break
@@ -523,7 +654,7 @@ class AeonEvolution:
                 self.debugger.paused = True
                 self.debugger.last_command = ''
             
-        # --- EoS ---
+        # --- 演算结束 ---
         print("\n\n== 演化结束 ===")
         if self.population:
             self.population.sort(key=lambda p: p.score, reverse=True)

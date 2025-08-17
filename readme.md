@@ -30,12 +30,26 @@
    - Place it in the `models` folder.
 
 5. **Run the project:**
+
    ```sh
    python main.py
+   ```
+
+   No lama_cpp:
+
+   ```sh
+   python main.py --disable-llm
    ```
 
 ## Notes
 
 - The `models` folder and large model files are ignored by git.
 - If you encounter issues, check that all dependencies are installed and the model file is present.
-- you should still be able to run the thing without the LLM model
+- you should still be able to run the thing without the LLM model.
+- you can run **without LLM whell package**, use arg: `--disable-llm`.
+
+## Thanks
+
+- HeyCrab3
+- AvalonRuFae
+- MoonofBridge24

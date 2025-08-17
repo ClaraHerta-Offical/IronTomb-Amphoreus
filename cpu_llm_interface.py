@@ -1,6 +1,5 @@
 # cpu_llm_interface.py
 
-from llama_cpp import Llama
 import os
 from config import config
 
@@ -10,7 +9,15 @@ class CpuLlmInterface:
         初始化并加载GGUF模型。
         """
         if not config['llm']['enable_llm']:
-            print("\033[93m大模型功能已禁用。请在配置文件中启用。\033[0m")
+            print("\033[93m大模型功能已禁用。请在配置文件或命令行中启用。\033[0m")
+            self.llm = None
+            return
+
+        # 只有在LLM启用时才尝试导入 llama_cpp
+        try:
+            from llama_cpp import Llama
+        except ImportError:
+            print("\n\033[91m错误：未安装 llama_cpp 库。请运行 'pip install llama-cpp-python' 或使用 --disable-llm 参数。\033[0m")
             self.llm = None
             return
 

@@ -8,37 +8,47 @@ from simulation import AeonEvolution
 import logging
 from config import config
 from datetime import datetime
+import argparse #
 
-logging.basicConfig(
-    filename=config['log']['file_name'],
-    level=logging.INFO,
-    format='[%(asctime)s][%(levelname)s] %(message)s'
-)
+# 创建一个 logger 实例
+logger = logging.getLogger("OmphalosLogger")
+logger.setLevel(logging.INFO)
 
+if config['log']['enable']:
+    file_handler = logging.FileHandler(config['log']['file_name'], mode='w', encoding='utf-8')
+    file_formatter = logging.Formatter('[%(asctime)s][%(levelname)s] %(message)s')
+    file_handler.setFormatter(file_formatter)
+    logger.addHandler(file_handler)
+
+console_handler = logging.StreamHandler(sys.stdout)
+console_formatter = logging.Formatter('%(message)s') 
+console_handler.setFormatter(console_formatter)
+logger.addHandler(console_handler)
 class LoggerWriter:
-    def __init__(self, level, stream):
+    def __init__(self, level):
         self.level = level
-        self.stream = stream
-        self._buffer = ''
+
     def write(self, message):
-        if message != '\n':
-            self._buffer += message
-        if '\n' in message:
-            self.flush()
-        self.stream.write('[{0}][{1}] {2}\r\n'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'), self.level.__name__, self._buffer))  # 同时输出到控制台
+        if message.strip():
+            self.level(message.strip())
+
     def flush(self):
-        if self._buffer:
-            self.level(self._buffer)
-            self._buffer = ''
-        self.stream.flush()
+        # logging 模块会自己处理 flush，这里 pass 即可
+        pass
+
+if config['log']['enable']:
+    sys.stdout = LoggerWriter(logger.info)
+    sys.stderr = LoggerWriter(logger.error)
 
 def run_simple():
     """ 以简单的控制台模式运行模拟 """
-    colorama.init()  # 初始化 colorama 以在 Windows 上启用 ANSI 颜色代码
+    colorama.init()
+    
+    config['generations'] = 324646553633550336
     sim = None
     try:
         sim = AeonEvolution(
-            # --- LLM 控制 ---
+            # --- LLM ---
             bard_frequency=0,         
             laertes_frequency=0,      
             kaoselanna_llm_enabled=config['llm']['kaoselanna_llm_enabled'],
@@ -61,19 +71,17 @@ def run_simple():
             target_avg_score=50.0,
             norm_adjustment_strength=0.05
         )
-        print("=== 翁法罗斯 v10.3 (Dev) 启动 ===")
+        print("=== 翁法罗斯 v10.4 (Dev) 启动 ===")
         sim.start(num_generations=config['generations'])
 
     except KeyboardInterrupt:
         print("\n\n模拟被用户中断。正在退出...")
-        # sys.exit(0) 
+        
 
     except Exception:
-        # 在发生其他异常时打印完整的追溯信息
         traceback.print_exc()
 
     finally:
-        # 确保在模拟结束或中断时保存模型
         if sim and hasattr(sim, 'policy_saver'):
             print("\n正在尝试保存策略模型...")
             sim.policy_saver.save_policy_models()
@@ -85,7 +93,14 @@ def run_simple():
 
 
 if __name__ == "__main__":
-    if config['log']['enable']:
-        sys.stdout = LoggerWriter(logging.info, sys.stdout)
-        sys.stderr = LoggerWriter(logging.error, sys.stderr)
+    parser = argparse.ArgumentParser(description="翁法罗斯")
+    parser.add_argument('--disable-llm', action='store_true', 
+                        help='彻底禁用LLM参与演算，无需安装llama_cpp。')
+    args = parser.parse_args()
+
+    # 根据参数更配
+    if args.disable_llm:
+        config['llm']['enable_llm'] = False
+        print("\033[93m命令行参数 --disable-llm 已启用，LLM功能已彻底禁用。\033[0m")
+
     run_simple()

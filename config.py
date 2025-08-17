@@ -34,7 +34,10 @@ config = {
         "aeonic_event_prob": 0.05,
         "initial_max_affinity_norm": 10000.0,
         "target_avg_score": 50.0,
-        "norm_adjustment_strength": 0.05
+        "norm_adjustment_strength": 0.05,
+        
+        # +++ 新增配置项 +++
+        "elites_to_keep_in_cycle": 10 # 永劫回归时，保留的旧世界精英数量
     },
     # 模拟阶段结束点
     "simulation_phases": {

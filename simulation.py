@@ -8,6 +8,7 @@ import sys
 import torch
 import torch.optim as optim
 import time
+import heapq # 确保在文件顶部导入
 
 # --- 在顶部导入新模块 ---
 from parliament_manager import ParliamentManager
@@ -471,8 +472,8 @@ class AeonEvolution:
         
         if len(self.population) > self.population_hard_cap:
             num_to_cull = len(self.population) - self.population_hard_cap
-            self.population.sort(key=lambda p: p.score)
-            culled_at_cap = self.population[:num_to_cull]
+            # 使用 heapq.nsmallest 高效地找到分数最低的 num_to_cull 个实体
+            culled_at_cap = heapq.nsmallest(num_to_cull, self.population, key=lambda p: p.score)
             if self.reincarnator in culled_at_cap: culled_at_cap.remove(self.reincarnator)
             
             culled_names = {p.name for p in culled_at_cap}
@@ -682,7 +683,8 @@ class AeonEvolution:
                 if self.reincarnator and len(self.reincarnator.held_fire_seeds) >= len(TITAN_NAMES):
                     should_end_simulation = self.aeonic_cycle_manager.end_aeonic_cycle(
                         self.reincarnator, self.population, self.base_titan_affinities,
-                        self.population_manager.mutation_rate, self.population_soft_cap, self.cosmic_zeitgeist
+                        self.population_manager.mutation_rate, self.population_soft_cap, self.cosmic_zeitgeist,
+                        config['simulation']['elites_to_keep_in_cycle'] # <--- 将配置值传入
                     )
                     if should_end_simulation: break
                 

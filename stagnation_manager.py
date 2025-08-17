@@ -96,12 +96,8 @@ class StagnationManager:
         diversity_metric = num_dominant_paths / len(PATH_NAMES)
         
         if diversity_metric < 0.25:
-            self.mutation_rate = self.base_mutation_rate * 2.5
-            print(f"\033[33m可观测样本过低({diversity_metric:.2f})！异常变量已临时提高至 {self.mutation_rate:.3f}\033[0m")
-        else:
-            self.mutation_rate = self.base_mutation_rate
-            
-        self.population_manager.mutation_rate = self.mutation_rate
+            print(f"\033[33m可观测样本过低({diversity_metric:.2f})！StagnationManager 检测到多样性不足，但突变率调整由 DiversityInterventionManager 负责。\033[0m")
+        
         return diversity_metric
 
     def update_cosmic_tide(self):

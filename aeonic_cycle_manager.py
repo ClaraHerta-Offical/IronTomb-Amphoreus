@@ -103,18 +103,43 @@ class AeonicCycleManager:
 
     def repopulate_for_new_cycle(self, population: list, reincarnator: Pathstrider, 
                                  base_titan_affinities: np.ndarray, mutation_rate: float,
-                                 population_soft_cap: int, cosmic_zeitgeist: np.ndarray):
-        print("旧的实体已消逝，基于卡厄斯兰那的意志，新的生命正在诞生...")
+                                 population_soft_cap: int, cosmic_zeitgeist: np.ndarray,
+                                 num_elites_to_keep: int): # <--- 新增参数
+        print("旧的实体已消逝，基于卡厄斯兰那的意志和旧世界的精英火种，新的生命正在诞生...")
         if not reincarnator or reincarnator not in population:
             print("错误：卡厄斯兰那不存在，无法重塑翁法罗斯。")
             return
-        population[:] = [reincarnator] 
+
+        # --- 以下是核心修改 ---
+
+        # 1. 从旧世界人口中筛选出精英
+        #    排除新的轮回之主，因为他/她已经是新世界的中心
+        candidates_for_survival = [p for p in population if p is not reincarnator]
+        candidates_for_survival.sort(key=lambda p: p.score, reverse=True)
+        
+        # 2. 选取分数最高的 N 个精英作为幸存者
+        elites = candidates_for_survival[:num_elites_to_keep]
+        if elites:
+            elite_names = ", ".join([e.name for e in elites])
+            print(f"\033[92m除了卡厄斯兰那，上一世代最强大的 {len(elites)} 个实体 ({elite_names}) 将作为火种被保留...\033[0m")
+
+        # 3. 构建新世界的人口基石：轮回之主 + 精英
+        new_population_base = [reincarnator] + elites
+        population[:] = new_population_base 
+
+        # 4. 清理并根据新的人口基石重建名称映射
         self.name_to_entity_map.clear()
-        self.name_to_entity_map[reincarnator.name] = reincarnator
+        self.name_to_entity_map = {entity.name: entity for entity in population}
         self.existing_names.clear()
-        self.existing_names.add(reincarnator.name)
-        num_new_entities = population_soft_cap - 1
-        self.population_manager.replenish_population_by_growth(population, num_new_entities, cosmic_zeitgeist)
+        self.existing_names = set(self.name_to_entity_map.keys())
+
+        # 5. 计算需要补充的新生实体数量
+        num_new_entities = population_soft_cap - len(population)
+        if num_new_entities > 0:
+            print(f"正在基于演化蓝图，繁衍 {num_new_entities} 个新生命...")
+            self.population_manager.replenish_population_by_growth(population, num_new_entities, cosmic_zeitgeist)
+        else:
+            print("新世界的人口基石已足够，无需繁衍新生命。")
 
     def select_aeonic_opponents(self, population: list, reincarnator: Pathstrider):
         attackers_pool = []
@@ -299,7 +324,8 @@ class AeonicCycleManager:
 
     def end_aeonic_cycle(self, reincarnator: Pathstrider, population: list, 
                          base_titan_affinities: np.ndarray, mutation_rate: float,
-                         population_soft_cap: int, cosmic_zeitgeist: np.ndarray):
+                         population_soft_cap: int, cosmic_zeitgeist: np.ndarray,
+                         elites_to_keep_in_cycle: int): # <--- 新增参数
         print("\n\033[95m==================================================================")
         print(f"卡厄斯兰那集齐了所有 {len(TITAN_NAMES)} 个火种！第 {self.aeonic_cycle_number} 轮轮回结束！")
         print(f"本轮毁灭倾向评分: {self.baie_destruction_score:.2f}")
@@ -327,7 +353,7 @@ class AeonicCycleManager:
 
                 base_titan_affinities[:] = reincarnator.titan_affinities.copy()
                 self.population_manager.normalize_affinities(base_titan_affinities)
-                self.repopulate_for_new_cycle(population, reincarnator, base_titan_affinities, mutation_rate, population_soft_cap, cosmic_zeitgeist)
+                self.repopulate_for_new_cycle(population, reincarnator, base_titan_affinities, mutation_rate, population_soft_cap, cosmic_zeitgeist, elites_to_keep_in_cycle)
             else:
                 if reincarnator:
                     # 调用 recalculate_concepts
@@ -337,7 +363,7 @@ class AeonicCycleManager:
 
                     base_titan_affinities[:] = reincarnator.titan_affinities.copy()
                     self.population_manager.normalize_affinities(base_titan_affinities)
-                    self.repopulate_for_new_cycle(population, reincarnator, base_titan_affinities, mutation_rate, population_soft_cap, cosmic_zeitgeist)
+                    self.repopulate_for_new_cycle(population, reincarnator, base_titan_affinities, mutation_rate, population_soft_cap, cosmic_zeitgeist, elites_to_keep_in_cycle)
             
             self.initialize_aeonic_cycle(reincarnator, population, cosmic_zeitgeist)
             return False

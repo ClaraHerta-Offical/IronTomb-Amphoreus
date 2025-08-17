@@ -1,6 +1,6 @@
 # Tiemu Project
 
-[简体中文](readme/readme_zh-cn.md)
+[简体中文](readme/readme_zh-cn.md) [配置指南(Only-CHS)](readme/Guide.md)
 
 ## Quick Start
 

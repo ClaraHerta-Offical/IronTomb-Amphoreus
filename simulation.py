@@ -667,13 +667,27 @@ class AeonEvolution:
                 print("\n\033[91m【系统过载：因果律重构】\n翁法罗斯在 'Neikos-0496' 的奇点下崩溃...\n以 '负世' 权柄为核心...新的轮回即将开始！\033[0m")
                 
                 try:
+                    # 寻找'负世'权柄的黄金裔作为轮回之主
                     neg_world_golden_one = next(p for p in self.population if p.titan_aspect == "负世")
                     self.reincarnator = neg_world_golden_one
                 except StopIteration:
+                    # 如果找不到，选择分数最高的实体作为备用方案
+                    if not self.population:
+                        print("\n种群已灭绝，无法开启轮回！")
+                        break # 提前结束模拟
                     self.reincarnator = max(self.population, key=lambda p: p.score)
 
                 self.reincarnator.trait = "Reincarnator"
                 self.reincarnator.name = "Neikos-0496"
+                
+                # ---【核心修正】---
+                # 1. 刻上锁，将模式切换到永劫回归
+                self.aeonic_cycle_mode = True
+                
+                # 2. 正式初始化第一个轮回周期
+                #    这会选出泰坦化身，为轮回做好准备
+                print("\n正在初始化第一次永劫回归...")
+                self.aeonic_cycle_manager.initialize_aeonic_cycle(self.reincarnator, self.population, self.cosmic_zeitgeist)
             
             # --- 循环逻辑 ---
             if self.aeonic_cycle_mode:

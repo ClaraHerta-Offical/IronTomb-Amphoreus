@@ -121,10 +121,10 @@ class PopulationManager:
                 
             self._add_new_entities(population, num_to_add, blueprint, cosmic_zeitgeist)
 
-    def replenish_population_by_growth(self, population: list, num_to_add: int, cosmic_zeitgeist: np.ndarray):
+    def replenish_population_by_growth(self, population: list, num_to_add: int, cosmic_zeitgeist: np.ndarray, legacy_modifier:np.ndarray = None):
         """Replenish based on the current blueprint from the guide network."""
         blueprint = self.base_titan_affinities
-        self._add_new_entities(population, num_to_add, blueprint, cosmic_zeitgeist)
+        self._add_new_entities(population, num_to_add, blueprint, cosmic_zeitgeist, legacy_modifier)
 
     def _add_new_entities(self, population: list, num_to_add: int, blueprint: np.ndarray, 
                           cosmic_zeitgeist: np.ndarray, legacy_modifier: np.ndarray = None): # 新增参数

@@ -6,7 +6,8 @@
 /models/*.*
 # Python virtual environment
 /.venv/
-/__pycache__/
+__pycache__/*
+__pycache__/*.*
 *.pyc
 
 # Model files (large, not suitable for git)

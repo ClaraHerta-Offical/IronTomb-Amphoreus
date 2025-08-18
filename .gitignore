@@ -1,6 +1,7 @@
 /baie_action_policy.pth
 /baie_value_policy.pth
 /blueprint_policy.pth
+/organic_prototype_model.pth
 /models/*.*
 # Python virtual environment
 /.venv/

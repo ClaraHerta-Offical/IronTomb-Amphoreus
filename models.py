@@ -48,16 +48,21 @@ class TitanToPathModel:
 class HybridGuideNetwork(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(HybridGuideNetwork, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.relu1 = nn.ReLU()
-        self.fc2 = nn.Linear(hidden_size, hidden_size) # 一个隐藏层
-        self.relu2 = nn.ReLU()
-        self.fc3 = nn.Linear(hidden_size, output_size)
+        # 增加网络深度和复杂度
+        self.network = nn.Sequential(
+            nn.Linear(input_size, hidden_size),
+            nn.ReLU(),
+            nn.Dropout(0.2),  # 增加Dropout层，防止过拟合，强制网络探索
+            nn.Linear(hidden_size, hidden_size * 2), # 增加神经元数量
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(hidden_size * 2, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, output_size)
+        )
 
     def forward(self, state, exploration_noise=0.1):
-        x = self.relu1(self.fc1(state))
-        x = self.relu2(self.fc2(x))
-        final_output = self.fc3(x)
+        final_output = self.network(state)
         # 探索噪声，有助于跳出局部最优
         if self.training:
             noise = torch.randn_like(final_output) * exploration_noise

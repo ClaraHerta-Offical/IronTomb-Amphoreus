@@ -95,8 +95,8 @@ class StagnationManager:
         num_dominant_paths = len(set(p.dominant_path_idx for p in population))
         diversity_metric = num_dominant_paths / len(PATH_NAMES)
         
-        if diversity_metric < 0.25:
-            print(f"\033[33m可观测样本过低({diversity_metric:.2f})！StagnationManager 检测到多样性不足，但突变率调整由 DiversityInterventionManager 负责。\033[0m")
+        #if diversity_metric < 0.25:
+        #    print(f"\033[33m可观测样本过低({diversity_metric:.2f})！StagnationManager 检测到多样性不足，但突变率调整由 DiversityInterventionManager 负责。\033[0m")
         
         return diversity_metric
 

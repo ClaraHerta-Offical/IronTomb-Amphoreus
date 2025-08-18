@@ -33,7 +33,7 @@ config = {
         "elite_selection_percentile": 80,
         "aeonic_event_prob": 0.05,
         "initial_max_affinity_norm": 10000.0,
-        "target_avg_score": 50.0,
+        "target_avg_score": 15.0,
         "norm_adjustment_strength": 0.05,
         
         # +++ 新增配置项 +++

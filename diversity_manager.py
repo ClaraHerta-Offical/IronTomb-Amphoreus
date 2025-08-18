@@ -11,6 +11,15 @@ class DiversityInterventionManager:
         self.parliament_manager = parliament_manager
         self.active_intervention = None
         self.intervention_duration = 0
+        
+        # --- 映射字典 ---
+        self.intervention_display_names = {
+            'path_schism': '命途分裂',
+            'outsider_injection': '天外来客',
+            'conformity_plague': '服从瘟疫',
+            'zeitgeist_suppression': '思潮抑制',
+            'minority_subsidy': '异端扶持'
+        }
 
     def _calculate_diversity_index(self, population: list):
         """计算当前的多样性指数。"""
@@ -29,7 +38,8 @@ class DiversityInterventionManager:
         if self.intervention_duration > 0:
             self.intervention_duration -= 1
             if self.intervention_duration == 0:
-                print(f"\033[36m【干预结束】 翁法罗斯的秩序正在从 '{self.active_intervention}' 事件中恢复。\033[0m")
+                display_name = self.intervention_display_names.get(self.active_intervention, self.active_intervention)
+                print(f"\033[36m【干预结束】 翁法罗斯的秩序正在从 ‘{display_name}’ 事件中恢复。\033[0m")
                 
                 # 关键的重置逻辑
                 if self.active_intervention == 'zeitgeist_suppression':

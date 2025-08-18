@@ -87,7 +87,8 @@ class AeonEvolution:
         self.base_titan_affinities = np.ones(len(TITAN_NAMES)) * 1.5
         
         # --- 强化学习与模型 ---
-        hgn_input_size = len(TITAN_NAMES) * 2 + len(PATH_NAMES) * 2 
+        # hgn_input_size = len(TITAN_NAMES) * 2 + len(PATH_NAMES) * 2 # 旧的
+        hgn_input_size = len(TITAN_NAMES) * 2 + len(PATH_NAMES) * 2 + 1 # 新的，+1是因为增加了停滞水平
         self.guide_network = HybridGuideNetwork(hgn_input_size, 128, len(TITAN_NAMES))
         self.guide_optimizer = optim.Adam(self.guide_network.parameters(), lr=initial_rl_lr)
         
@@ -333,7 +334,17 @@ class AeonEvolution:
         elite_avg_affinities = np.mean([e.titan_affinities for e in elites], axis=0)
         global_dist = self.population_manager.get_global_path_distribution(self.population)
         
-        state_np = np.concatenate([elite_avg_affinities, self.reincarnator.titan_affinities, global_dist, self.cosmic_zeitgeist])
+        # 将停滞计数器也作为输入，让网络感知到当前的“僵化”程度
+        # 归一化到 0-1 之间
+        stagnation_level = min(self.stagnation_manager.long_term_stagnation_counter / 10.0, 1.0)
+        
+        state_np = np.concatenate([
+            elite_avg_affinities, 
+            self.reincarnator.titan_affinities, 
+            global_dist, 
+            self.cosmic_zeitgeist,
+            np.array([stagnation_level]) # 新增输入
+        ])
         state = torch.from_numpy(state_np).float()
         target = torch.from_numpy(elite_avg_affinities).float()
 
@@ -386,7 +397,7 @@ class AeonEvolution:
                 if culled_entity:
                     culled_this_gen.add(culled_entity)
         
-        # 律法半神发动权柄
+        # 律法半神发动权
         self._apply_law_titan_power()
 
         # 在交互和淘汰计算之后，评估多样性并进行干预
@@ -680,12 +691,12 @@ class AeonEvolution:
                 self.reincarnator.trait = "Reincarnator"
                 self.reincarnator.name = "Neikos-0496"
                 
-                # ---【核心修正】---
-                # 1. 刻上锁，将模式切换到永劫回归
+                # ---Fix---
+                #  刻上锁，将模式切换到永劫回归
                 self.aeonic_cycle_mode = True
                 
-                # 2. 正式初始化第一个轮回周期
-                #    这会选出泰坦化身，为轮回做好准备
+                # 正式初始化第一个轮回周期
+                # 这会选出泰坦化身，为轮回做好准备
                 print("\n正在初始化第一次永劫回归...")
                 self.aeonic_cycle_manager.initialize_aeonic_cycle(self.reincarnator, self.population, self.cosmic_zeitgeist)
             

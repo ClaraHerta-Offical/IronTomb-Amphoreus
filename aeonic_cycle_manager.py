@@ -110,30 +110,28 @@ class AeonicCycleManager:
             print("错误：卡厄斯兰那不存在，无法重塑翁法罗斯。")
             return
 
-        # --- 以下是核心修改 ---
 
-        # 1. 从旧世界人口中筛选出精英
-        #    排除新的轮回之主，因为他/她已经是新世界的中心
         candidates_for_survival = [p for p in population if p is not reincarnator]
         candidates_for_survival.sort(key=lambda p: p.score, reverse=True)
         
-        # 2. 选取分数最高的 N 个精英作为幸存者
         elites = candidates_for_survival[:num_elites_to_keep]
         if elites:
             elite_names = ", ".join([e.name for e in elites])
             print(f"\033[92m除了卡厄斯兰那，上一世代最强大的 {len(elites)} 个实体 ({elite_names}) 将作为火种被保留...\033[0m")
 
-        # 3. 构建新世界的人口基石：轮回之主 + 精英
         new_population_base = [reincarnator] + elites
         population[:] = new_population_base 
 
-        # 4. 清理并根据新的人口基石重建名称映射
+        # 清理并根据新的人口基石重建名称映射
         self.name_to_entity_map.clear()
-        self.name_to_entity_map = {entity.name: entity for entity in population}
         self.existing_names.clear()
-        self.existing_names = set(self.name_to_entity_map.keys())
 
-        # 5. 计算需要补充的新生实体数量
+        # 就地更新共享对象，而不是重新赋值
+        for entity in population:
+            self.name_to_entity_map[entity.name] = entity
+            self.existing_names.add(entity.name)
+
+        # 计算需要补充的新生实体数量
         num_new_entities = population_soft_cap - len(population)
         if num_new_entities > 0:
             print(f"正在基于演化蓝图，繁衍 {num_new_entities} 个新生命...")

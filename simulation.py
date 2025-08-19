@@ -751,14 +751,20 @@ class AeonEvolution:
         self.policy_saver.save_policy_models()
 
     def save_simulation_state(self, filepath):
-        """保存整个模拟的当前状态到一个JSON文件。"""
+        """保存整个模拟的当前状态到一个JSON文件，并进行类型检查与转换。"""
         logger.info(f"\n\033[96m正在保存模拟状态至 {filepath} ...\033[0m")
         if self.reincarnator:
             self.reincarnator_name = self.reincarnator.name
 
+        # 对 parliament_seats 的值进行 int 转换
+        safe_parliament_seats = {k: int(v) for k, v in self.parliament_manager.seats.items()}
+        
+        # 对 simulation_weights 的值进行 float/int 转换
+        safe_simulation_weights = {k: float(v) for k, v in self.simulation_weights.items()}
+
         state = {
             # 基础状态
-            'generation': int(self.generation), # 转换为int
+            'generation': int(self.generation),
             'aeonic_cycle_mode': self.aeonic_cycle_mode,
             'reincarnator_name': self.reincarnator_name,
             
@@ -766,19 +772,19 @@ class AeonEvolution:
             'base_titan_affinities': self.base_titan_affinities.tolist(),
             'cosmic_zeitgeist': self.cosmic_zeitgeist.tolist(),
 
-            # 种群信息
+            # 种群信息 
             'population': [p.to_dict() for p in self.population],
             'existing_names': list(self.existing_names),
 
-            # 管理器状态
-            'parliament_seats': {int(k): [p.to_dict() for p in v] for k, v in self.parliament_manager.seats.items()}, # 确保键是int，值是可序列化的实体列表
+            # 管理器状态 (进行显式类型转换)
+            'parliament_seats': safe_parliament_seats,
             'stagnation_counter': int(self.stagnation_manager.long_term_stagnation_counter),
             'baie_stagnation_counter': int(self.stagnation_manager.baie_stagnation_counter),
             'diversity_intervention': self.diversity_manager.active_intervention,
-            'diversity_duration': self.diversity_manager.intervention_duration,
+            'diversity_duration': int(self.diversity_manager.intervention_duration),
 
             # 模拟权重
-            'simulation_weights': self.simulation_weights,
+            'simulation_weights': safe_simulation_weights,
         }
 
         try:

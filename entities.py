@@ -152,9 +152,9 @@ class Pathstrider:
             'name': self.name,
             'titan_affinities': self.titan_affinities.tolist(), # NumPy 数组转为列表
             'trait': self.trait,
-            'golden_one_tenure': self.golden_one_tenure,
-            'score': self.score,
-            'hp': self.hp,
+            'golden_one_tenure': int(self.golden_one_tenure),
+            'score': float(self.score),
+            'hp': float(self.hp),
             'is_titan_boss': self.is_titan_boss,
             'titan_aspect': self.titan_aspect,
             'data_modification_unlocked': self.data_modification_unlocked,

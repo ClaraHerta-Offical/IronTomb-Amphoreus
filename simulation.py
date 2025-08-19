@@ -471,7 +471,7 @@ class AeonEvolution:
         num_new_entities = 0
         # 如果当前人口低于软上限，则优先根据软限补充
         if len(self.population) < self.population_soft_cap:
-            num_new_entities = (self.population_soft_cap - len(self.population)) * 0.5
+            num_new_entities = int((self.population_soft_cap - len(self.population)) * 0.5)
         # 否则，按增长因子正常增长
         else:
             num_new_entities = int(len(self.population) * self.growth_factor)

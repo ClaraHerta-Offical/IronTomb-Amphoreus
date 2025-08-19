@@ -49,6 +49,7 @@
 - If you encounter issues, check that all dependencies are installed and the model file is present.
 - you should still be able to run the thing without the LLM model.
 - you can run **without LLM whell package**, use arg: `--disable-llm`.
+- This project uses `pyclog` for logging. See [About the Logging System](readme/clog_en.md) for a quick guide, and the [Pyclog Project](https://github.com/Akanyi/pyclog) for full details.
 
 ## Interactive Console and Archiving
 

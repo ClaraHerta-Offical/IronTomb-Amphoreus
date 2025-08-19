@@ -6,6 +6,9 @@ from constants import GREEK_ROOTS, TITAN_NAMES, PATH_NAMES
 from entities import Pathstrider
 from models import TitanToPathModel
 
+import logging 
+logger = logging.getLogger("OmphalosLogger") 
+
 class PopulationManager:
     def __init__(self, existing_names: set, name_to_entity_map: dict, 
                  base_titan_affinities: np.ndarray, mutation_rate: float, 

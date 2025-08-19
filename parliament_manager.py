@@ -2,6 +2,9 @@
 import numpy as np
 from constants import PATH_NAMES
 
+import logging 
+logger = logging.getLogger("OmphalosLogger") 
+
 class ParliamentManager:
     def __init__(self):
         self.seats = {name: 0 for name in PATH_NAMES}
@@ -39,10 +42,10 @@ class ParliamentManager:
         for i, name in enumerate(PATH_NAMES):
             self.seats[name] = allocated_seats[i]
         
-        print("\n\033[34m--- 公民议会换届 ---")
+        logger.info("\n\033[34m--- 公民议会换届 ---")
         dominant_party = max(self.seats, key=self.seats.get)
-        print(f"本世代议会已组成，命途主导 '{dominant_party}' (席位: {self.seats[dominant_party]}/{self.total_seats})")
-        print("--------------------------\033[0m")
+        logger.info(f"本世代议会已组成，命途主导 '{dominant_party}' (席位: {self.seats[dominant_party]}/{self.total_seats})")
+        logger.info("--------------------------\033[0m")
         # 重置抑制因子，除非干预仍在持续
         if self.suppression_factor != 1.0:
              pass

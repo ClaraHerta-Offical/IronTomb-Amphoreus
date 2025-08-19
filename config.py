@@ -19,10 +19,10 @@ config = {
     "simulation": {
         "bard_frequency": 0,
         "laertes_frequency": 0,
-        "num_initial_entities": 200,
+        "num_initial_entities": 1000,
         "golden_one_cap": 12,
-        "population_soft_cap": 300,
-        "population_hard_cap": 500,
+        "population_soft_cap": 1000,
+        "population_hard_cap": 2000,
         "growth_factor": 0.35,
         "mutation_rate": 0.25,
         "culling_strength": 0.85,

@@ -3,13 +3,16 @@
 import os
 from config import config
 
+import logging 
+logger = logging.getLogger("OmphalosLogger") 
+
 class CpuLlmInterface:
     def __init__(self, model_folder="models"):
         """
         初始化并加载GGUF模型。
         """
         if not config['llm']['enable_llm']:
-            print("\033[93m大模型功能已禁用。请在配置文件或命令行中启用。\033[0m")
+            logger.info("\033[93m大模型功能已禁用。请在配置文件或命令行中启用。\033[0m")
             self.llm = None
             return
 
@@ -17,7 +20,7 @@ class CpuLlmInterface:
         try:
             from llama_cpp import Llama
         except ImportError:
-            print("\n\033[91m错误：未安装 llama_cpp 库。请运行 'pip install llama-cpp-python' 或使用 --disable-llm 参数。\033[0m")
+            logger.info("\n\033[91m错误：未安装 llama_cpp 库。请运行 'pip install llama-cpp-python' 或使用 --disable-llm 参数。\033[0m")
             self.llm = None
             return
 
@@ -25,9 +28,9 @@ class CpuLlmInterface:
         model_path = os.path.join(model_folder, model_name)
 
         if not os.path.exists(model_path):
-            print(f"\n\033[91m错误：找不到模型文件！\033[0m")
-            print(f"请确保你已经下载了 '{model_name}'")
-            print(f"并将其放置在项目的 '{model_folder}' 文件夹中。")
+            logger.info(f"\n\033[91m错误：找不到模型文件！\033[0m")
+            logger.info(f"请确保你已经下载了 '{model_name}'")
+            logger.info(f"并将其放置在项目的 '{model_folder}' 文件夹中。")
             return
 
         try:
@@ -42,10 +45,10 @@ class CpuLlmInterface:
                 verbose=False,
                 enable_thinking=config['llm']['enable_thinking']
             )
-            print("\033[92m模型加载成功！翁法罗斯拥有了新的低语者。\033[0m")
+            logger.info("\033[92m模型加载成功！翁法罗斯拥有了新的低语者。\033[0m")
         except Exception as e:
-            print(f"\n\033[91m模型加载时发生致命错误: {e}\033[0m")
-            print("这可能是由于文件损坏或库安装不正确。")
+            logger.info(f"\n\033[91m模型加载时发生致命错误: {e}\033[0m")
+            logger.info("这可能是由于文件损坏或库安装不正确。")
 
     def generate_response(self, prompt, max_tokens=120):
         """

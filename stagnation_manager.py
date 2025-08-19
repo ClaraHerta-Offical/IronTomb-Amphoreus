@@ -7,6 +7,9 @@ from constants import PATH_NAMES, TITAN_NAMES, LONG_TERM_STAGNATION_THRESHOLD, B
 from entities import Pathstrider
 from population_manager import PopulationManager
 
+import logging 
+logger = logging.getLogger("OmphalosLogger") 
+
 class StagnationManager:
     def __init__(self, population_manager: PopulationManager, 
                  guide_optimizer: optim.Adam, 
@@ -56,7 +59,7 @@ class StagnationManager:
                 self.baie_stagnation_counter = 0 
 
     def _trigger_conceptual_awakening(self, population: list):
-        print(f"\n\033[91m【全局停滞】 来古士: 翁法罗斯的演化已停滞 {LONG_TERM_STAGNATION_THRESHOLD} 世代！必须引入新的变量！\033[0m")
+        logger.info(f"\n\033[91m【全局停滞】 来古士: 翁法罗斯的演化已停滞 {LONG_TERM_STAGNATION_THRESHOLD} 世代！必须引入新的变量！\033[0m")
         if not population: return
         
         total_affinities = np.sum([p.titan_affinities for p in population], axis=0)
@@ -69,14 +72,14 @@ class StagnationManager:
         self.cosmic_tide_vector[:] = 0
         self.cosmic_tide_vector[weakest_titan_idx] = tide_strength
         
-        print(f"\n\033[35m来古士引入了新变量: 在未来 {self.tide_duration} 世代，'{weakest_titan_name}' 的影响被史诗级增强了。\033[0m")
-        print("\033[93m...学习策略已调整: 提高探索性，寻求突破。\033[0m")
+        logger.info(f"\n\033[35m来古士引入了新变量: 在未来 {self.tide_duration} 世代，'{weakest_titan_name}' 的影响被史诗级增强了。\033[0m")
+        logger.info("\033[93m...学习策略已调整: 提高探索性，寻求突破。\033[0m")
         for g in self.guide_optimizer.param_groups:
             g['lr'] *= 2.0 
 
     def _trigger_revelation_boost(self, reincarnator: Pathstrider, cosmic_zeitgeist: np.ndarray):
         if not reincarnator: return
-        print(f"\n\033[96m事件: 卡厄斯兰那 ({reincarnator.name}) 的成长已停滞 {BAIE_STAGNATION_THRESHOLD} 世代，命运的齿轮开始转动...\033[0m")
+        logger.info(f"\n\033[96m事件: 卡厄斯兰那 ({reincarnator.name}) 的成长已停滞 {BAIE_STAGNATION_THRESHOLD} 世代，命运的齿轮开始转动...\033[0m")
         
         non_zero_affinities = np.where(reincarnator.titan_affinities > 0, reincarnator.titan_affinities, np.inf)
         weakest_link_idx = np.argmin(non_zero_affinities)
@@ -96,7 +99,7 @@ class StagnationManager:
         diversity_metric = num_dominant_paths / len(PATH_NAMES)
         
         #if diversity_metric < 0.25:
-        #    print(f"\033[33m可观测样本过低({diversity_metric:.2f})！StagnationManager 检测到多样性不足，但突变率调整由 DiversityInterventionManager 负责。\033[0m")
+        #    logger.info(f"\033[33m可观测样本过低({diversity_metric:.2f})！StagnationManager 检测到多样性不足，但突变率调整由 DiversityInterventionManager 负责。\033[0m")
         
         return diversity_metric
 
@@ -113,7 +116,7 @@ class StagnationManager:
             self.cosmic_tide_vector[favored_indices] = tide_strength
             
             favored_names = ", ".join([TITAN_NAMES[i] for i in favored_indices])
-            print(f"\n\033[35m来古士引入了新变量: 在未来 {self.tide_duration} 世代，'{favored_names}' 的影响增强了。\033[0m")
+            logger.info(f"\n\033[35m来古士引入了新变量: 在未来 {self.tide_duration} 世代，'{favored_names}' 的影响增强了。\033[0m")
         else: 
             self.cosmic_tide_vector *= 0.95
         

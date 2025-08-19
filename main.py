@@ -8,7 +8,7 @@ from simulation import AeonEvolution
 import logging
 from config import config
 from datetime import datetime
-import argparse #
+import argparse 
 from pyclog import ClogFileHandler, constants # 导入 pyclog
 
 colorama.init(autoreset=True) # 确保在sys.stdout重定向前初始化colorama
@@ -67,13 +67,13 @@ def run_simple(load_save_path=None):
         if load_save_path:
             sim.load_simulation_state(load_save_path)
 
-        print("=== 翁法罗斯 v10.4 (Dev) 启动 ===")
+        logger.info("=== 翁法罗斯 v10.4 (Dev) 启动 ===")
         sim.start(
             num_generations=config['simulation_phases']['TOTAL_SIMULATION_END']
         )
 
     except KeyboardInterrupt:
-        print("\n\n模拟被用户中断。正在退出...")
+        logger.info("\n\n模拟被用户中断。正在退出...")
         
 
     except Exception:
@@ -81,9 +81,9 @@ def run_simple(load_save_path=None):
 
     finally:
         if sim and hasattr(sim, 'policy_saver'):
-            print("\n正在尝试保存策略模型...")
+            logger.info("\n正在尝试保存策略模型...")
             sim.policy_saver.save_policy_models()
-            print("\n正在尝试保存clog...")
+            logger.info("\n正在尝试保存clog...")
             logging.shutdown()
         
         print("\n模拟已结束。按任意键退出。")
@@ -103,6 +103,6 @@ if __name__ == "__main__":
     # 根据参数更配
     if args.disable_llm:
         config['llm']['enable_llm'] = False
-        print("\033[93m命令行参数 --disable-llm 已启用，LLM功能已彻底禁用。\033[0m")
+        logger.info("\033[93m命令行参数 --disable-llm 已启用，LLM功能已彻底禁用。\033[0m")
 
     run_simple()

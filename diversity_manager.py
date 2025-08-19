@@ -4,6 +4,9 @@ import random
 from collections import Counter
 from constants import PATH_NAMES, TITAN_NAMES
 
+import logging 
+logger = logging.getLogger("OmphalosLogger") 
+
 class DiversityInterventionManager:
     def __init__(self, config, population_manager, parliament_manager):
         self.config = config['diversity_intervention']
@@ -39,7 +42,7 @@ class DiversityInterventionManager:
             self.intervention_duration -= 1
             if self.intervention_duration == 0:
                 display_name = self.intervention_display_names.get(self.active_intervention, self.active_intervention)
-                print(f"\033[36m【干预结束】 翁法罗斯的秩序正在从 ‘{display_name}’ 事件中恢复。\033[0m")
+                logger.info(f"\033[36m【干预结束】 翁法罗斯的秩序正在从 ‘{display_name}’ 事件中恢复。\033[0m")
                 
                 # 关键的重置逻辑
                 if self.active_intervention == 'zeitgeist_suppression':
@@ -76,11 +79,11 @@ class DiversityInterventionManager:
         self.intervention_duration = 15 # 干预持续15代
 
         if intervention_choice == 'zeitgeist_suppression':
-            print("\n\033[33m【多样性干预：思潮抑制】 翁法罗斯的主流思想受到质疑！\033[0m")
+            logger.info("\n\033[33m【多样性干预：思潮抑制】 翁法罗斯的主流思想受到质疑！\033[0m")
             self.parliament_manager.suppression_factor = self.config['zeitgeist_suppression_factor']
         
         elif intervention_choice == 'minority_subsidy':
-            print("\n\033[33m【多样性干预：异端扶持】 翁法罗斯开始保护少数派思想，为罕见的命途提供生存空间。\033[0m")
+            logger.info("\n\033[33m【多样性干预：异端扶持】 翁法罗斯开始保护少数派思想，为罕见的命途提供生存空间。\033[0m")
             self._subsidize_minorities(population, path_counts)
 
     def _trigger_critical_intervention(self, population: list, path_counts: Counter):
@@ -92,15 +95,15 @@ class DiversityInterventionManager:
         dominant_path_idx = path_counts.most_common(1)[0][0]
 
         if intervention_choice == 'path_schism':
-            print(f"\n\033[91m【多样性危机：命途分裂】 主流命途 '{PATH_NAMES[dominant_path_idx]}' 内部发生分裂，被迫重新选择立场！\033[0m")
+            logger.info(f"\n\033[91m【多样性危机：命途分裂】 主流命途 '{PATH_NAMES[dominant_path_idx]}' 内部发生分裂，被迫重新选择立场！\033[0m")
             self._execute_path_schism(population, dominant_path_idx)
 
         elif intervention_choice == 'outsider_injection':
-            print(f"\n\033[91m【多样性危机：天外来客】 翁法罗斯的死寂吸引了未知的外来者，带来了全新的外来变量！\033[0m")
+            logger.info(f"\n\033[91m【多样性危机：天外来客】 翁法罗斯的死寂吸引了未知的外来者，带来了全新的外来变量！\033[0m")
             self._inject_outsiders(population, path_counts)
 
         elif intervention_choice == 'conformity_plague':
-            print(f"\n\033[91m【多样性危机：服从瘟疫】 一场针对主流思想的瘟疫爆发，所有 '{PATH_NAMES[dominant_path_idx]}' 的追随者都感到了莫名的虚弱！\033[0m")
+            logger.info(f"\n\033[91m【多样性危机：服从瘟疫】 一场针对主流思想的瘟疫爆发，所有 '{PATH_NAMES[dominant_path_idx]}' 的追随者都感到了莫名的虚弱！\033[0m")
             self._apply_conformity_plague(population, dominant_path_idx)
     
 

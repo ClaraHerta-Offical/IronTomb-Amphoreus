@@ -1,6 +1,9 @@
 import sys
 import time
 
+import logging 
+logger = logging.getLogger("OmphalosLogger") 
+
 class DisplayManager:
     def __init__(self):
         pass
@@ -30,10 +33,10 @@ class DisplayManager:
     def display_interruption_animation(self):
         spinner = ['/', '-', '\\', '|']
         message = "\033[91m警告：侦测异常反应... 原有进程已中断... 正在启动备用协议...\033[0m"
-        print(f"\n{message}")
+        logger.info(f"\n{message}")
         for i in range(20):
             spin_char = spinner[i % len(spinner)]
             sys.stdout.write(f"\r载入中... {spin_char}")
             sys.stdout.flush()
             time.sleep(0.1)
-        print("\n")
+        logger.info("\n")

@@ -7,6 +7,9 @@ from population_manager import PopulationManager
 from entities import Pathstrider
 from models import TitanToPathModel
 
+import logging 
+logger = logging.getLogger("OmphalosLogger") 
+
 class InteractionHandler:
     def __init__(self, PATH_RELATIONSHIP_MATRIX: np.ndarray, PATH_INTERACTION_MATRIX: np.ndarray, 
                  encounter_similarity: float, culling_strength: float, 
@@ -52,7 +55,7 @@ class InteractionHandler:
         if is_reincarnator_involved and strider1.dominant_path_idx == strider2.dominant_path_idx:
             other_entity = strider2 if reincarnator is strider1 else strider1
             if other_entity.trait != "GoldenOne":
-                print(f"\033[91m卡厄斯兰那在其命途 '{PATH_NAMES[reincarnator.dominant_path_idx]}' 上对敌人 {other_entity.name} 发动了无条件的毁灭！\033[0m")
+                logger.info(f"\033[91m卡厄斯兰那在其命途 '{PATH_NAMES[reincarnator.dominant_path_idx]}' 上对敌人 {other_entity.name} 发动了无条件的毁灭！\033[0m")
                 return other_entity
         
         participants = {strider1, strider2}
@@ -126,21 +129,21 @@ class InteractionHandler:
 
     def _handle_titan_battle(self, golden_one: Pathstrider, titan_boss: Pathstrider):
         """处理金裔对其对应的泰坦的战斗。"""
-        print(f"\n\033[35m【逐火之旅】黄金裔 {golden_one.name} ({golden_one.titan_aspect}) 挑战泰坦 {titan_boss.name}！\033[0m")
+        logger.info(f"\n\033[35m【逐火之旅】黄金裔 {golden_one.name} ({golden_one.titan_aspect}) 挑战泰坦 {titan_boss.name}！\033[0m")
         
         damage = golden_one.score * (0.2 + random.random() * 0.3)
         titan_boss.hp -= damage
         
-        print(f"{golden_one.name} 对泰坦造成了 {damage:.2f} 点伤害！泰坦剩余HP: {titan_boss.hp:.2f}")
+        logger.info(f"{golden_one.name} 对泰坦造成了 {damage:.2f} 点伤害！泰坦剩余HP: {titan_boss.hp:.2f}")
 
         if titan_boss.hp <= 0:
-            print(f"\033[92m泰坦 {titan_boss.name} 已被击败！黄金裔 {golden_one.name} 继承了其火种，成为半神！\033[0m")
+            logger.info(f"\033[92m泰坦 {titan_boss.name} 已被击败！黄金裔 {golden_one.name} 继承了其火种，成为半神！\033[0m")
             golden_one.data_modification_unlocked = True
             golden_one.score *= 1.5 
             return titan_boss 
         
         if random.random() < 0.05: 
-            print(f"\033[91m泰坦发起了反击！{golden_one.name} 灰飞烟灭！\033[0m")
+            logger.info(f"\033[91m泰坦发起了反击！{golden_one.name} 灰飞烟灭！\033[0m")
             return golden_one
             
         return None

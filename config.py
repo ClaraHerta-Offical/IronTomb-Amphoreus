@@ -13,7 +13,7 @@ config = {
     # 日志
     "log": {
         "enable": True, # 是否启用日志
-        "file_name": 'simulation-{0}.log'.format(datetime.now().strftime("%Y-%m-%d_%H-%M-%S")), # 日志文件名
+        "file_name": 'simulation-{0}.clog'.format(datetime.now().strftime("%Y-%m-%d_%H-%M-%S")), # 日志文件名
     },
     # 模拟参数
     "simulation": {
@@ -36,7 +36,6 @@ config = {
         "target_avg_score": 15.0,
         "norm_adjustment_strength": 0.05,
         
-        # +++ 新增配置项 +++
         "elites_to_keep_in_cycle": 10 # 永劫回归时，保留的旧世界精英数量
     },
     # 模拟阶段结束点

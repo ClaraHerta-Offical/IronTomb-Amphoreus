@@ -9,40 +9,34 @@ import logging
 from config import config
 from datetime import datetime
 import argparse #
+from pyclog import ClogFileHandler, constants # 导入 pyclog
+
+colorama.init(autoreset=True) # 确保在sys.stdout重定向前初始化colorama
 
 # 创建一个 logger 实例
 logger = logging.getLogger("OmphalosLogger")
 logger.setLevel(logging.INFO)
 
 if config['log']['enable']:
-    file_handler = logging.FileHandler(config['log']['file_name'], mode='w', encoding='utf-8')
-    file_formatter = logging.Formatter('[%(asctime)s][%(levelname)s] %(message)s')
-    file_handler.setFormatter(file_formatter)
-    logger.addHandler(file_handler)
+    # 使用 ClogFileHandler 替换 FileHandler
+    clog_handler = ClogFileHandler(config['log']['file_name'], compression_code=constants.COMPRESSION_GZIP)
+    file_formatter = logging.Formatter('%(message)s')
+    clog_handler.setFormatter(file_formatter)
+    logger.addHandler(clog_handler)
 
+# 终端输出仍然使用 StreamHandler
 console_handler = logging.StreamHandler(sys.stdout)
-console_formatter = logging.Formatter('%(message)s') 
+console_formatter = logging.Formatter('[%(asctime)s][%(levelname)s] %(message)s') 
 console_handler.setFormatter(console_formatter)
 logger.addHandler(console_handler)
-class LoggerWriter:
-    def __init__(self, level):
-        self.level = level
 
-    def write(self, message):
-        if message.strip():
-            self.level(message.strip())
-
-    def flush(self):
-        # logging 模块会自己处理 flush，这里 pass 即可
-        pass
-
-if config['log']['enable']:
-    sys.stdout = LoggerWriter(logger.info)
-    sys.stderr = LoggerWriter(logger.error)
+# 移除 LoggerWriter 和 sys.stdout/sys.stderr 重定向
+# if config['log']['enable']:
+#     sys.stdout = LoggerWriter(logger.info)
+#     sys.stderr = LoggerWriter(logger.error)
 
 def run_simple(load_save_path=None):
     """ 以简单的控制台模式运行模拟 """
-    colorama.init()
     
     sim = None
     try:
@@ -89,6 +83,8 @@ def run_simple(load_save_path=None):
         if sim and hasattr(sim, 'policy_saver'):
             print("\n正在尝试保存策略模型...")
             sim.policy_saver.save_policy_models()
+            print("\n正在尝试保存clog...")
+            logging.shutdown()
         
         print("\n模拟已结束。按任意键退出。")
         if os.name == 'nt':

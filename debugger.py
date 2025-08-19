@@ -114,10 +114,10 @@ class Debugger:
                     print(f"  种群数量: {len(self.sim.population)}")
                     print(f"  生态多样性: {diversity:.2%}")
                     print(f"  当前突变率: {self.sim.stagnation_manager.mutation_rate:.4f}")
-                    if self.sim.long_term_stagnation_counter:
-                        print(f"  全局停滞计数: {self.sim.long_term_stagnation_counter} / 10 (触发唤醒)")
+                    if self.sim.stagnation_manager.long_term_stagnation_counter:
+                        print(f"  全局停滞计数: {self.sim.stagnation_manager.long_term_stagnation_counter} / 10 (触发唤醒)")
                     if self.sim.reincarnator:
-                        print(f"  白厄停滞计数: {self.sim.baie_stagnation_counter} / {BAIE_STAGNATION_THRESHOLD}")
+                        print(f"  白厄停滞计数: {self.sim.stagnation_manager.baie_stagnation_counter} / {BAIE_STAGNATION_THRESHOLD}")
                     print("---")
                 elif cmd == 'zeitgeist':
                     print("\n--- 当前翁法罗斯思潮 ---")

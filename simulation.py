@@ -756,7 +756,7 @@ class AeonEvolution:
 
         state = {
             # 基础状态
-            'generation': self.generation,
+            'generation': int(self.generation), # 转换为int
             'aeonic_cycle_mode': self.aeonic_cycle_mode,
             'reincarnator_name': self.reincarnator_name,
             
@@ -770,8 +770,8 @@ class AeonEvolution:
 
             # 管理器状态
             'parliament_seats': self.parliament_manager.seats,
-            'stagnation_counter': self.stagnation_manager.long_term_stagnation_counter,
-            'baie_stagnation_counter': self.stagnation_manager.baie_stagnation_counter,
+            'stagnation_counter': int(self.stagnation_manager.long_term_stagnation_counter), # 转换为int
+            'baie_stagnation_counter': int(self.stagnation_manager.baie_stagnation_counter), # 转换为int
             'diversity_intervention': self.diversity_manager.active_intervention,
             'diversity_duration': self.diversity_manager.intervention_duration,
 

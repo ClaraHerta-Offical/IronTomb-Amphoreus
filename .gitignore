@@ -23,4 +23,5 @@ models/
 
 # Log files
 *.log
+*.clog
 /__pycache__

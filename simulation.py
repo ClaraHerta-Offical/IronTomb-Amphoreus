@@ -433,11 +433,6 @@ class AeonEvolution:
                 logger.info(f"卡厄斯兰那已重生: {self.reincarnator}")
         
         if culled_this_gen:
-            # self.population[:] = [p for p in self.population if p not in culled_this_gen]
-            # for p in culled_this_gen:
-            #     if p.name in self.name_to_entity_map: del self.name_to_entity_map[p.name]
-            #     if p.name in self.existing_names: self.existing_names.remove(p.name)
-            # logger.info(f"动态淘汰了 {len(culled_this_gen)} 个实体。")
             culled_names = {p.name for p in culled_this_gen}
             self.population = [p for p in self.population if p.name not in culled_names]
             for name in culled_names:
@@ -473,19 +468,28 @@ class AeonEvolution:
         self.population_manager.normalize_affinities(self.base_titan_affinities)
         logger.info(f"引导网络更新蓝图: 主导方向 '{TITAN_NAMES[np.argmax(self.base_titan_affinities)]}'。")
 
-        num_new_entities = int(len(self.population) * self.growth_factor) if len(self.population) > 0 else 10
-        if len(self.population) + num_new_entities < self.population_hard_cap:
+        num_new_entities = 0
+        # 如果当前人口低于软上限，则优先根据软限补充
+        if len(self.population) < self.population_soft_cap:
+            num_new_entities = (self.population_soft_cap - len(self.population)) * 0.5
+        # 否则，按增长因子正常增长
+        else:
+            num_new_entities = int(len(self.population) * self.growth_factor)
+
+        # 确保补充后不超过硬上限
+        if len(self.population) + num_new_entities > self.population_hard_cap:
+            num_new_entities = self.population_hard_cap - len(self.population)
+        
+        if num_new_entities > 0:
             self.population_manager.replenish_population_by_growth(
                 population=self.population,
                 num_to_add=num_new_entities,
                 cosmic_zeitgeist=self.cosmic_zeitgeist,
-                # 传递修正值
                 legacy_modifier=self.legacy_manager.newborn_affinity_modifier * self.legacy_manager.influence_factor
             )
         
         if len(self.population) > self.population_hard_cap:
             num_to_cull = len(self.population) - self.population_hard_cap
-            # 使用 heapq.nsmallest 高效地找到分数最低的 num_to_cull 个实体
             culled_at_cap = heapq.nsmallest(num_to_cull, self.population, key=lambda p: p.score)
             if self.reincarnator in culled_at_cap: culled_at_cap.remove(self.reincarnator)
             
@@ -751,14 +755,20 @@ class AeonEvolution:
         self.policy_saver.save_policy_models()
 
     def save_simulation_state(self, filepath):
-        """保存整个模拟的当前状态到一个JSON文件。"""
+        """保存整个模拟的当前状态到一个JSON文件，并进行类型检查与转换。"""
         logger.info(f"\n\033[96m正在保存模拟状态至 {filepath} ...\033[0m")
         if self.reincarnator:
             self.reincarnator_name = self.reincarnator.name
 
+        # 对 parliament_seats 的值进行 int 转换
+        safe_parliament_seats = {k: int(v) for k, v in self.parliament_manager.seats.items()}
+        
+        # 对 simulation_weights 的值进行 float/int 转换
+        safe_simulation_weights = {k: float(v) for k, v in self.simulation_weights.items()}
+
         state = {
             # 基础状态
-            'generation': int(self.generation), # 转换为int
+            'generation': int(self.generation),
             'aeonic_cycle_mode': self.aeonic_cycle_mode,
             'reincarnator_name': self.reincarnator_name,
             
@@ -766,19 +776,19 @@ class AeonEvolution:
             'base_titan_affinities': self.base_titan_affinities.tolist(),
             'cosmic_zeitgeist': self.cosmic_zeitgeist.tolist(),
 
-            # 种群信息
+            # 种群信息 
             'population': [p.to_dict() for p in self.population],
             'existing_names': list(self.existing_names),
 
-            # 管理器状态
-            'parliament_seats': {int(k): [p.to_dict() for p in v] for k, v in self.parliament_manager.seats.items()}, # 确保键是int，值是可序列化的实体列表
+            # 管理器状态 (进行显式类型转换)
+            'parliament_seats': safe_parliament_seats,
             'stagnation_counter': int(self.stagnation_manager.long_term_stagnation_counter),
             'baie_stagnation_counter': int(self.stagnation_manager.baie_stagnation_counter),
             'diversity_intervention': self.diversity_manager.active_intervention,
-            'diversity_duration': self.diversity_manager.intervention_duration,
+            'diversity_duration': int(self.diversity_manager.intervention_duration),
 
             # 模拟权重
-            'simulation_weights': self.simulation_weights,
+            'simulation_weights': safe_simulation_weights,
         }
 
         try:

@@ -1,4 +1,4 @@
-# main.py
+# main.py Modded
 
 import os
 import sys
@@ -67,13 +67,13 @@ def run_simple(load_save_path=None):
         if load_save_path:
             sim.load_simulation_state(load_save_path)
 
-        logger.info("=== 翁法罗斯 v10.4 (Dev) 启动 ===")
+        logger.info("=== 翁法罗斯 Dev Edition Build 33550336.10.4 启动 ===")
         sim.start(
             num_generations=config['simulation_phases']['TOTAL_SIMULATION_END']
         )
 
     except KeyboardInterrupt:
-        logger.info("\n\n模拟被用户中断。正在退出...")
+        logger.info("\n\n管理员已中断模拟。正在退出...")
         
 
     except Exception:
@@ -95,7 +95,7 @@ def run_simple(load_save_path=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="翁法罗斯")
     parser.add_argument('--disable-llm', action='store_true', 
-                        help='彻底禁用LLM参与演算，无需安装llama_cpp。')
+                        help='彻底禁用LLM演算，无需安装llama_cpp。')
     parser.add_argument('--load-save', type=str, default=None,
                         help='从指定的存档文件加载并开始模拟。')
     args = parser.parse_args()
@@ -103,6 +103,6 @@ if __name__ == "__main__":
     # 根据参数更配
     if args.disable_llm:
         config['llm']['enable_llm'] = False
-        logger.info("\033[93m命令行参数 --disable-llm 已启用，LLM功能已彻底禁用。\033[0m")
+        logger.info("\033[93m命令行参数 --disable-llm 已启用，LLM功能不可用。\033[0m")
 
     run_simple()

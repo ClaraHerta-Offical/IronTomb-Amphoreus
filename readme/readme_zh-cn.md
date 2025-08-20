@@ -49,7 +49,7 @@
 * 如果您遇到问题，请检查所有依赖项是否已安装以及模型文件是否存在。
 * 即使没有 LLM 模型，您也应该能够运行该项目。
 * 您可以在**没有 LLM wheel 包**的情况下运行，使用参数：`--disable-llm`。
-* 本项目使用 `pyclog` 作为日志记录，快速使用参见 [关于日志系统](readme/clog_zh-cn.md)，详情参阅 [Pyclog Project](https://github.com/Akanyi/pyclog)
+* 本项目使用 `pyclog` 作为日志记录，快速使用参见 [关于日志系统](clog_zh-cn.md)，详情参阅 [Pyclog Project](https://github.com/Akanyi/pyclog)
 
 ## 交互式控制台与存档
 

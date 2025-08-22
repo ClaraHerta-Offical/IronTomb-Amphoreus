@@ -23,20 +23,41 @@ class InteractionHandler:
         self.population_soft_cap = population_soft_cap
         self.titan_to_path_model = titan_to_path_model
         self.population_manager = population_manager
+        self._bins = {}
+        self._bin_size = 10 # 每个桶10分
+
+    def update_bins(self, population: list):
+        """在每代开始时调用，更新分桶。"""
+        self._bins.clear()
+        for entity in population:
+            bin_key = int(entity.score // self._bin_size)
+            if bin_key not in self._bins:
+                self._bins[bin_key] = []
+            self._bins[bin_key].append(entity)
 
     def select_opponents(self, population: list, reincarnator: Pathstrider):
         if len(population) < 2: return None, None
+        
         entity1 = np.random.choice(population)
-        if reincarnator and entity1 is reincarnator:
-            same_path_opponents = [p for p in population if p is not entity1 and p.dominant_path_idx == entity1.dominant_path_idx]
-            if same_path_opponents and random.random() < 0.8:
-                return entity1, random.choice(same_path_opponents)
-        score_window = entity1.score * (self.encounter_similarity * 2) 
-        potential_opponents = [p for p in population if p != entity1 and abs(p.score - entity1.score) <= score_window]
+        
+        # --- 选择逻辑 --- 8/23/0.49
+        bin_key = int(entity1.score // self._bin_size)
+        
+        potential_opponents = []
+        # 从实体自己的桶、前一个桶、后一个桶里找对手
+        for i in range(bin_key - 1, bin_key + 2):
+            if i in self._bins:
+                potential_opponents.extend(self._bins[i])
+        
+        # 移除自己
+        potential_opponents = [p for p in potential_opponents if p is not entity1]
+
         if not potential_opponents:
+            # Fallback: 如果邻近桶是空的，随机选一个
             fallback_pool = [p for p in population if p != entity1]
             if not fallback_pool: return entity1, None 
             return entity1, np.random.choice(fallback_pool)
+
         return entity1, np.random.choice(potential_opponents)
 
     def entity_interaction(self, strider1: Pathstrider, strider2: Pathstrider, 

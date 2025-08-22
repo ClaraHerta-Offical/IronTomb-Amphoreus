@@ -6,12 +6,18 @@ logger = logging.getLogger("OmphalosLogger")
 
 class DisplayManager:
     def __init__(self):
-        pass
+        self._last_update_time = 0
 
     def update_and_display_progress(self, phase: str, current_value: float, max_value: float):
+        # 每隔 0.1 秒才真正更新一次屏幕，避免I/O过于频繁
+        current_time = time.time()
+        progress = (current_value / max_value) if max_value > 0 else 0
+        if current_time - self._last_update_time < 0.1 and progress < 0.99:
+             return
+        self._last_update_time = current_time
+
         bar_length = 50
         
-        progress = (current_value / max_value) if max_value > 0 else 0
         progress = min(max(progress, 0), 1.0) 
         
         filled_length = int(bar_length * progress)

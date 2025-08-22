@@ -289,7 +289,7 @@ class AeonEvolution:
         except StopIteration:
             pass # 没有满足条件的律法半神
 
-    def _check_for_aeonic_events(self, culled_this_gen):
+    def _check_for_aeonic_events(self, culled_this_gen, entities_to_update: set):
         if random.random() < self.aeonic_event_prob:
             event_type = random.choice(["purification", "singularity", "awakening"])
             global_dist = self.population_manager.get_global_path_distribution(self.population)
@@ -305,6 +305,7 @@ class AeonEvolution:
                 logger.info(f"\n\033[91m【翁法罗斯事件: 概念奇点】'{PATH_NAMES[empowered_path_idx]}' 命途短暂地成为了真理！\033[0m")
                 for p in self.population:
                     p.titan_affinities += self.titan_to_path_model_instance.titan_to_path_matrix[:, empowered_path_idx] * 2.0
+                    entities_to_update.add(p) # 添加到更新集合
                     self.population_manager.recalculate_and_normalize_entity(p, global_dist, self.cosmic_zeitgeist)
                     multiplier = self.parliament_manager.get_zeitgeist_multiplier(p.path_affinities)
                     p.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
@@ -313,6 +314,7 @@ class AeonEvolution:
                 logger.info(f"\n\033[91m【翁法罗斯事件: 泰坦回响】泰坦 '{TITAN_NAMES[awakened_titan_idx]}' 的概念浸染了所有实体！\033[0m")
                 for p in self.population:
                     p.titan_affinities[awakened_titan_idx] *= 2.5
+                    entities_to_update.add(p) # 添加到更新集合
                     self.population_manager.recalculate_and_normalize_entity(p, global_dist, self.cosmic_zeitgeist)
                     multiplier = self.parliament_manager.get_zeitgeist_multiplier(p.path_affinities)
                     p.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
@@ -376,11 +378,12 @@ class AeonEvolution:
         # 议会选举
         self.parliament_manager.hold_election(self.population)
 
-        # 重新计算所有实体分数
-        global_dist = self.population_manager.get_global_path_distribution(self.population)
-        for p in self.population:
-            multiplier = self.parliament_manager.get_zeitgeist_multiplier(p.path_affinities)
-            p.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
+        # 议会选举后，不要立即全局重算
+        
+        entities_to_update = set() # 创建一个集合
+
+        # 更新分桶 
+        self.interaction_handler.update_bins(self.population)
 
         # 交互
         culled_this_gen = set()
@@ -395,10 +398,17 @@ class AeonEvolution:
             if entity1 not in culled_this_gen and entity2 not in culled_this_gen:
                 multiplier1 = self.parliament_manager.get_zeitgeist_multiplier(entity1.path_affinities)
                 culled_entity = self.interaction_handler.entity_interaction(
-                    entity1, entity2, self.population, self.reincarnator, global_dist, self.cosmic_zeitgeist, multiplier1
+                    entity1, entity2, self.population, self.reincarnator, self.population_manager.get_global_path_distribution(self.population), self.cosmic_zeitgeist, multiplier1
                 )
                 if culled_entity:
                     culled_this_gen.add(culled_entity)
+                
+                # 无论是否淘汰，参与者状态都可能改变
+                entities_to_update.add(entity1)
+                entities_to_update.add(entity2)
+        
+        # 翁法罗斯事件 
+        self._check_for_aeonic_events(culled_this_gen, entities_to_update)
         
         # 律法半神发动权
         self._apply_law_titan_power()
@@ -406,11 +416,12 @@ class AeonEvolution:
         # 在交互和淘汰计算之后，评估多样性并进行干预
         self.diversity_manager.assess_and_intervene(self.population, self.generation)
         
-        # 重新计算所有实体分数，因为干预措施可能已经改变了它们
+        # 只为受影响的实体更新状态
         global_dist = self.population_manager.get_global_path_distribution(self.population)
-        for p in self.population:
-            multiplier = self.parliament_manager.get_zeitgeist_multiplier(p.path_affinities)
-            p.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
+        for p in entities_to_update:
+            if p not in culled_this_gen: # 确保它还活着
+                multiplier = self.parliament_manager.get_zeitgeist_multiplier(p.path_affinities)
+                p.recalculate_concepts(zeitgeist_multiplier=multiplier, path_distribution=global_dist)
                     
         logger.info(f"世代 {self.generation} 演算结束。")
         return culled_this_gen

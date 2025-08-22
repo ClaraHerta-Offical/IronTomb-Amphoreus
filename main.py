@@ -10,6 +10,7 @@ from config import config
 from datetime import datetime
 import argparse 
 from pyclog import ClogFileHandler, constants # 导入 pyclog
+import re # 导入 re 模块
 
 colorama.init(autoreset=True) # 确保在sys.stdout重定向前初始化colorama
 
@@ -25,8 +26,35 @@ if config['log']['enable']:
     logger.addHandler(clog_handler)
 
 # 终端输出仍然使用 StreamHandler
+class CustomConsoleFormatter(logging.Formatter):
+    def format(self, record):
+        # 获取完整的格式化日志行
+        log_line = super().format(record)
+        
+        # 查找消息部分的起始位置
+        # 格式字符串是 '[%(asctime)s][%(levelname)s] %(message)s'
+        # 我们需要找到 ']' 之后的第一个空格，作为消息的起始
+        match = re.match(r'\[.*?\]\[.*?\]\s*', log_line)
+        if match:
+            prefix_length = match.end()
+        else:
+            prefix_length = 0 # 如果没有匹配到，则不缩进
+
+        # 将日志行按换行符分割
+        lines = log_line.splitlines()
+        
+        # 对除第一行以外的每一行添加缩进
+        if len(lines) > 1:
+            indented_lines = [lines[0]]
+            for line in lines[1:]:
+                indented_lines.append(' ' * prefix_length + line)
+            return '\n'.join(indented_lines)
+        else:
+            return log_line
+
+# 终端输出仍然使用 StreamHandler
 console_handler = logging.StreamHandler(sys.stdout)
-console_formatter = logging.Formatter('[%(asctime)s][%(levelname)s] %(message)s') 
+console_formatter = CustomConsoleFormatter('[%(asctime)s][%(levelname)s] %(message)s')
 console_handler.setFormatter(console_formatter)
 logger.addHandler(console_handler)
 

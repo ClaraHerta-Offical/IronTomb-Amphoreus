@@ -45,7 +45,7 @@ class AeonEvolution:
                  # --- 演化参数 ---
                  num_initial_entities=200, golden_one_cap=12, population_soft_cap=300, 
                  population_hard_cap=500, growth_factor=0.35, mutation_rate=0.25, culling_strength=0.85, 
-                 encounter_similarity=0.35, purity_factor=0.01, initial_rl_lr=0.005, golden_one_reversion_prob=0.1,
+                 encounter_similarity=0.35, purity_factor=0.01, initial_rl_lr=0.005, golden_one_reversion_prob=0.1, fast_forward=False,
                  elite_selection_percentile=80, aeonic_event_prob=0.05,
                  initial_max_affinity_norm=10000.0, target_avg_score=50.0,
                  norm_adjustment_strength=0.05
@@ -56,6 +56,7 @@ class AeonEvolution:
         self.legacy_manager = PrimordialLegacyManager()
         self.laertes_frequency = laertes_frequency
         self.kaoselanna_llm_enabled = kaoselanna_llm_enabled
+        self.fast_forward = fast_forward
         
         # --- LLM 接口初始化 ---
         self.llm_interface = CpuLlmInterface()

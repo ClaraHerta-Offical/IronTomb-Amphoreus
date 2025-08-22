@@ -74,6 +74,7 @@ def run_simple(load_save_path=None):
             laertes_frequency=config['simulation']['laertes_frequency'],      
             kaoselanna_llm_enabled=config['llm']['kaoselanna_llm_enabled'],
 
+            fast_forward=args.fast_forward if 'args' in locals() and hasattr(args, 'fast_forward') else False,
             # --- 其他模拟参数 ---
             num_initial_entities=config['simulation']['num_initial_entities'], 
             golden_one_cap=config['simulation']['golden_one_cap'], 
@@ -128,7 +129,7 @@ if __name__ == "__main__":
                         help='从指定的存档文件加载并开始模拟。')
     parser.add_argument('--fast-forward', action='store_true',
                         help='快速演化模式，仅显示进度条和周期性报告。')
-    args = parser.parse_args()
+    global args; args = parser.parse_args() # 定义为全局变量以便run_simple访问
  
     # 根据参数更配
     if args.disable_llm:

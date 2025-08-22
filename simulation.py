@@ -659,6 +659,11 @@ class AeonEvolution:
             if self.debugger.paused:
                 if not was_paused:
                     sys.stdout.write("\r" + " " * 80 + "\r")
+                    # 在快速模式下，需要临时恢复日志等级以显示调试信息
+                    if self.fast_forward:
+                        for handler in logger.handlers:
+                            if isinstance(handler, logging.StreamHandler):
+                                handler.setLevel(logging.INFO)
                     logger.info("\n\n=== 模拟已暂停。输入 'help' 获取命令列表。 ===")
                     was_paused = True
                 self.debugger.handle_commands()
@@ -666,7 +671,15 @@ class AeonEvolution:
             if was_paused:
                 logger.info("\n=== 模拟已恢复 ===")
                 was_paused = False
-
+                # 恢复后，再次抑制日志
+                if self.fast_forward:
+                    for handler in logger.handlers:
+                        if isinstance(handler, logging.StreamHandler):
+                            handler.setLevel(logging.CRITICAL + 1)
+ 
+            # 每5000代在快速模式下打印报告
+            if self.fast_forward and self.generation > 0 and self.generation % 5000 == 0:
+                self._print_fast_forward_summary()
             if self.generation > ORGANIC_PHASE_END + 1: # 从第二代开始
                 # 将上一代的12位黄金裔变为泰坦Boss
                 last_gen_titans = [p for p in self.population if p.titan_aspect and p.trait == "GoldenOne"]
@@ -753,6 +766,33 @@ class AeonEvolution:
                  logger.info(self.reincarnator)
         else: logger.info("翁法罗斯最终归于沉寂。")
         self.policy_saver.save_policy_models()
+    
+    def _print_fast_forward_summary(self):
+        """在快速演化模式下，打印周期性报告到控制台。"""
+        # 清理进度条所在的行
+        sys.stdout.write("\r" + " " * 80 + "\r")
+
+        diversity = 0
+        if self.population:
+            diversity = len(set(p.dominant_path_idx for p in self.population)) / len(PATH_NAMES)
+
+        dominant_party = max(self.parliament_manager.seats, key=self.parliament_manager.seats.get)
+        dominant_seats = self.parliament_manager.seats[dominant_party]
+
+        summary_lines = [
+            f"\n\033[1m\033[92m--- 快速演化报告 (世代: {self.generation}) ---\033[0m",
+            f"  - 种群数量: {len(self.population)}",
+            f"  - 生态多样性: {diversity:.2%}",
+            f"  - 平均分数: {self.last_avg_score:.2f}",
+            f"  - 主导思潮: '{dominant_party}' (席位: {dominant_seats}/{self.parliament_manager.total_seats})",
+            f"  - 当前突变率: {self.population_manager.mutation_rate:.4f}",
+            f"  - 全局停滞计数: {self.stagnation_manager.long_term_stagnation_counter} / 10"
+        ]
+        if self.reincarnator:
+            summary_lines.append(f"  - 卡厄斯兰那: {self.reincarnator.name} (评分: {self.reincarnator.score:.2f})")
+        summary_lines.append("--------------------------------------------------\n")
+        
+        print("\n".join(summary_lines), flush=True)
 
     def save_simulation_state(self, filepath):
         """保存整个模拟的当前状态到一个JSON文件，并进行类型检查与转换。"""

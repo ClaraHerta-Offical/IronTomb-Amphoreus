@@ -126,11 +126,24 @@ if __name__ == "__main__":
                         help='彻底禁用LLM参与演算，无需安装llama_cpp。')
     parser.add_argument('--load-save', type=str, default=None,
                         help='从指定的存档文件加载并开始模拟。')
+    parser.add_argument('--fast-forward', action='store_true',
+                        help='快速演化模式，仅显示进度条和周期性报告。')
     args = parser.parse_args()
-
+ 
     # 根据参数更配
     if args.disable_llm:
         config['llm']['enable_llm'] = False
         logger.info("\033[93m命令行参数 --disable-llm 已启用，LLM功能已彻底禁用。\033[0m")
+    
+    if args.fast_forward:
+        # 找到控制台处理器并抑制其输出，以实现快速模式
+        found_handler = False
+        for handler in logger.handlers:
+            if isinstance(handler, logging.StreamHandler) and handler.stream == sys.stdout:
+                logger.info("\033[93m快速演化模式已启用。控制台输出将受到抑制。\033[0m")
+                handler.setLevel(logging.CRITICAL + 1) # 将等级设为极高，使其忽略所有常规日志
+                found_handler = True
+        if not found_handler:
+             logger.warning("警告：无法找到控制台日志处理器，--fast-forward可能无法完全生效。")
 
     run_simple()

@@ -11,12 +11,19 @@ from datetime import datetime
 import argparse 
 from pyclog import ClogFileHandler, constants # 导入 pyclog
 import re # 导入 re 模块
+import ramdom
 
 colorama.init(autoreset=True) # 确保在sys.stdout重定向前初始化colorama
 
 # 创建一个 logger 实例
 logger = logging.getLogger("OmphalosLogger")
 logger.setLevel(logging.INFO)
+
+def elysia():
+    if random.randint(0, 1) == 1:
+        logger.info("某一日，祂从天坠落。人们抬头仰望，于是看见了星空。星月送来神的女儿，她愿成为人的伴侣。长风化作她的轺车，四海落成她的园圃。鸟雀衔来善的种子，百花编织爱的颂歌。她便是这样降生于世，行于大地，与人类一同长大，与世界一起发芽。而今，终焉之时将至。而今，归去之时已至。就此告别吧，美丽的世界。此后，将有群星闪耀，因为我如今来过。此后，将有百花绽放，因为我从未离去。请将我的箭、我的花、与我的爱，织成新生的种子，带向那枯萎的大地。然后，便让它开出永恒而无瑕的…人性之华吧。我名为爱莉希雅……最初的律者，人之律者。")
+        logger.info("请注意：电信号PhiLia093已载入。")
+        logger.info("管理员未响应。")
 
 if config['log']['enable']:
     # 使用 ClogFileHandler 替换 FileHandler
@@ -96,13 +103,14 @@ def run_simple(load_save_path=None):
         if load_save_path:
             sim.load_simulation_state(load_save_path)
 
-        logger.info("=== 翁法罗斯 v10.4 (Dev) 启动 ===")
+        logger.info("=== 翁法罗斯 v10.4 (Dev) 启动 - 正在载入电信号===")
+        elysia()
         sim.start(
             num_generations=config['simulation_phases']['TOTAL_SIMULATION_END']
         )
 
     except KeyboardInterrupt:
-        logger.info("\n\n模拟被用户中断。正在退出...")
+        logger.info("\n\n模拟已中断。正在退出...")
         
 
     except Exception:
@@ -115,7 +123,7 @@ def run_simple(load_save_path=None):
             logger.info("\n正在尝试保存clog...")
             logging.shutdown()
         
-        print("\n模拟已结束。按任意键退出。")
+        print("\n当前模拟已结束。按任意键退出。")
         if os.name == 'nt':
             os.system('pause')
         sys.exit(0) 
@@ -126,7 +134,7 @@ if __name__ == "__main__":
     parser.add_argument('--disable-llm', action='store_true', 
                         help='彻底禁用LLM参与演算，无需安装llama_cpp。')
     parser.add_argument('--load-save', type=str, default=None,
-                        help='从指定的存档文件加载并开始模拟。')
+                        help='载入指定存档数据并开始模拟。')
     parser.add_argument('--fast-forward', action='store_true',
                         help='快速演化模式，仅显示进度条和周期性报告。')
     global args; args = parser.parse_args() # 定义为全局变量以便run_simple访问
@@ -134,17 +142,17 @@ if __name__ == "__main__":
     # 根据参数更配
     if args.disable_llm:
         config['llm']['enable_llm'] = False
-        logger.info("\033[93m命令行参数 --disable-llm 已启用，LLM功能已彻底禁用。\033[0m")
+        logger.info("\033[93m命令行参数 --disable-llm 已启用，当前已禁用LLM模块。\033[0m")
     
     if args.fast_forward:
         # 找到控制台处理器并抑制其输出，以实现快速模式
         found_handler = False
         for handler in logger.handlers:
             if isinstance(handler, logging.StreamHandler) and handler.stream == sys.stdout:
-                logger.info("\033[93m快速演化模式已启用。控制台输出将受到抑制。\033[0m")
+                logger.info("\033[93m快速演化模式已激活。抑制控制台输出。\033[0m")
                 handler.setLevel(logging.CRITICAL + 1) # 将等级设为极高，使其忽略所有常规日志
                 found_handler = True
         if not found_handler:
-             logger.warning("警告：无法找到控制台日志处理器，--fast-forward可能无法完全生效。")
+             logger.warning("警告：控制台日志处理器无效，--fast-forward可能不完全可用。")
 
     run_simple()

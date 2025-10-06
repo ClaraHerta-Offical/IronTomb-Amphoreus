@@ -5,8 +5,8 @@ GREEK_ROOTS = [
     "Hypnos", "Nesoi", "Nyx", "Ourea", "Physis", "Pontus", "Tartarus", "Thalassa",
     "Thanatos", "Uranus", "Helios", "Eos", "Selene", "Leto", "Asteria", "Astraeus",
     "Pallas", "Perses", "Krios", "Koios", "Iapetus", "Hyperion", "Okeanos", "Tethys",
-    "Theia", "Themis", "Mnemosyne", "Phoebe", "Rhea", "Metis", "Typhon", "Echidna","Lans",
-    "Neikos" 
+    "Theia", "Themis", "Mnemosyne", "Phoebe", "KaLos", "PoleMos", "ApoRia", "HubRis","SkeMma",
+    "NeiKos", "OreXis", "EpieiKeia", "EleOs", "HapLotes", "SkoPeo" 
 ]
 
 TITAN_NAMES = [

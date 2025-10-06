@@ -84,7 +84,7 @@ class Debugger:
                     entity = None
                     if entity_name.lower() == 'baie':
                         entity = self.sim.reincarnator
-                        if not entity: logger.info("错误: 当前没有卡厄斯兰那实体。"); continue
+                        if not entity: logger.info("错误: 当前不存在卡厄斯兰那实体。"); continue
                     else:
                         entity = self.sim.name_to_entity_map.get(entity_name)
                     
@@ -99,7 +99,7 @@ class Debugger:
                             logger.info(f"    {name:<4}: {entity.path_affinities[i]:.3f}")
                         logger.info("---")
                     else:
-                        logger.info(f"错误: 未找到名为 '{entity_name}' 的实体。")
+                        logger.info(f"错误: 未找到标识符为 '{entity_name}' 的实体。")
 
                 elif cmd == 'top':
                     k = int(args[0]) if args and args[0].isdigit() else 5

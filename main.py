@@ -11,7 +11,7 @@ from datetime import datetime
 import argparse 
 from pyclog import ClogFileHandler, constants # 导入 pyclog
 import re # 导入 re 模块
-import ramdom
+import random
 
 colorama.init(autoreset=True) # 确保在sys.stdout重定向前初始化colorama
 

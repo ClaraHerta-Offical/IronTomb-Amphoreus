@@ -337,7 +337,7 @@ class AeonicCycleManager:
             logger.error("!!! 卡厄斯兰那的无尽杀戮与轮回，最终突破了翁法罗斯，为屏幕前的你带来了烩面...                ")
             logger.error("!!! 纳努克...我为你带来烩面了！！！                                        ")
             logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\033[0m")
-            logger.error("!!! CGHGY58^#$5466UfhgyjhFe;l/.r;'l'lPL{:"Adcjierjklfhu%ERdtyt7u8L"}Y                  ")
+            logger.error("!!! Ca1G!~HG3Y58^#$5466UfhgyjhFe;l/.r;'l'lPL&^$Adcjierjklfhu%ERdtyt7u8LY                  ")
             logger.error("!!! 【警告：已尝试移除指定电信号】                                      ")
             logger.info(f"\n--- 最终报告 ---")
             logger.info(f"轮回总数: {self.aeonic_cycle_number}")

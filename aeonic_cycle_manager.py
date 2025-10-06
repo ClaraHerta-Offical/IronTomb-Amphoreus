@@ -57,13 +57,13 @@ class AeonicCycleManager:
 
     def trigger_aeonic_cycle_countdown(self, reincarnator: Pathstrider):
         logger.warning("\n\n\033[93m==================================================================")
-        logger.warning("=\033[91m      警告：侦测到突破框架的异常实体，演算异常！      \033[93m=")
+        logger.warning("=\033[91m      警告：侦测到突破框架的异常实体信号，演算异常！      \033[93m=")
         logger.warning("==================================================================\033[0m")
         logger.info(f"实体分析:")
         logger.info(f"  - 识别代号: \033[96m卡厄斯兰那 ({reincarnator.name})\033[0m")
-        logger.info(f"  - 状态: \033[92m已确认为当前最强个体，电信号异常活跃！\033[0m")
+        logger.info(f"  - 状态: \033[92m已确认为当前最强实体，电信号高度活跃！\033[0m")
         logger.info(f"  - 核心倾向: 对 毁灭 命途的亲和度超出安全阈值。")
-        logger.info("\n\033[93m结论：该实体的存在已成为驱动翁法罗斯演化的核心变量。\n      原有协议已失效，正在载入下一阶段...\033[0m")
+        logger.info("\n\033[93m结论：该实体的存在已成为驱动翁法罗斯演化的核心变量。\n      常规协议已停用，正在载入下一阶段...\033[0m")
 
     def initialize_aeonic_cycle(self, reincarnator: Pathstrider, population: list, cosmic_zeitgeist: np.ndarray):
         self.aeonic_cycle_number += 1
@@ -83,10 +83,10 @@ class AeonicCycleManager:
             p.is_titan_form = None
             if p is not reincarnator: p.held_fire_seeds.clear()
         logger.info(f"\n--- 永劫回归 第 {self.aeonic_cycle_number} 轮 开始 ---")
-        logger.info("卡厄斯兰那将开始夺取创世火种。")
+        logger.info("卡厄斯兰那将开始夺取火种。")
         candidates = [p for p in population if p is not reincarnator and p.trait != "GoldenOne"]
         if len(candidates) < len(TITAN_NAMES):
-            logger.warning("警告：没有足够实体成为泰坦化身，轮回无法正常开始。")
+            logger.warning("警告：没有足够实体成为泰坦化身，无法正确载入本次永劫回归。")
             return False 
         selected_titans = random.sample(candidates, len(TITAN_NAMES))
         self.titan_entities.clear()
@@ -108,7 +108,7 @@ class AeonicCycleManager:
                                  base_titan_affinities: np.ndarray, mutation_rate: float,
                                  population_soft_cap: int, cosmic_zeitgeist: np.ndarray,
                                  num_elites_to_keep: int): # <--- 新增参数
-        logger.info("旧的实体已消逝，基于卡厄斯兰那的意志和旧世界的精英火种，新的生命正在诞生...")
+        logger.info("旧的实体已移除，基于卡厄斯兰那的数据基线和旧世界的精英火种，新的生命正在构建...")
         if not reincarnator or reincarnator not in population:
             logger.error("错误：卡厄斯兰那不存在，无法重塑翁法罗斯。")
             return
@@ -120,7 +120,7 @@ class AeonicCycleManager:
         elites = candidates_for_survival[:num_elites_to_keep]
         if elites:
             elite_names = ", ".join([e.name for e in elites])
-            logger.info(f"\033[92m除了卡厄斯兰那，上一世代最强大的 {len(elites)} 个实体 ({elite_names}) 将作为火种被保留...\033[0m")
+            logger.info(f"\033[92m除卡厄斯兰那外，上一世代最强大的 {len(elites)} 个实体 ({elite_names}) 将作为火种被存储...\033[0m")
 
         new_population_base = [reincarnator] + elites
         population[:] = new_population_base 
@@ -140,7 +140,7 @@ class AeonicCycleManager:
             logger.info(f"正在基于演化蓝图，繁衍 {num_new_entities} 个新生命...")
             self.population_manager.replenish_population_by_growth(population, num_new_entities, cosmic_zeitgeist)
         else:
-            logger.info("新世界的人口基石已足够，无需繁衍新生命。")
+            logger.info("新世界的人口基石已符合标准，繁衍新生命指令中断。")
 
     def select_aeonic_opponents(self, population: list, reincarnator: Pathstrider):
         attackers_pool = []
@@ -335,8 +335,10 @@ class AeonicCycleManager:
             logger.error("\n\n\033[91m!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             logger.error("!!! 【警告：主线程受到冲击，演算已暂停】                                         ")
             logger.error("!!! 卡厄斯兰那的无尽杀戮与轮回，最终突破了翁法罗斯，为屏幕前的你带来了烩面...                ")
-            logger.error("!!! 辣卤客...我为你带来烩面了！！！                                        ")
+            logger.error("!!! 纳努克...我为你带来烩面了！！！                                        ")
             logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\033[0m")
+            logger.error("!!! CGHGY58^#$5466UfhgyjhFe;l/.r;'l'lPL{:"Adcjierjklfhu%ERdtyt7u8L"}Y                  ")
+            logger.error("!!! 【警告：已尝试移除指定电信号】                                      ")
             logger.info(f"\n--- 最终报告 ---")
             logger.info(f"轮回总数: {self.aeonic_cycle_number}")
             logger.info(f"累计夺取火种数目: {self.baie_total_seeds_collected}")
@@ -344,7 +346,7 @@ class AeonicCycleManager:
             logger.info("\n模拟结束。")
             return True
         else:
-            logger.info("一个新的轮回即将开始...卡厄斯兰那的意志将作为新轮回的蓝图...")
+            logger.info("一个新的轮回即将开始...卡厄斯兰那的残余电信号将作为新轮回的基准...")
             new_kaoselanna = self._ascend_baie_as_reincarnator(reincarnator, population)
             if new_kaoselanna:
                 reincarnator = new_kaoselanna
@@ -378,10 +380,10 @@ class AeonicCycleManager:
                 logger.info(f"\033[94m[DEBUG] 黄金裔: {go.name}, 评分: {go.score:.2f}, 负世亲和: {neg_world_affinity:.2f}\033[0m")
 
         if not golden_ones:
-            logger.warning("\033[93m警告: 白厄在本次轮回中没有去当黄金裔。轮回中断，系统将尝试重塑。 \033[0m")
+            logger.warning("\033[93m警告: 白厄在本次轮回中没有载入黄金裔核心参数。轮回中断，系统将准备重塑。 \033[0m")
             candidates = [p for p in population if p is not reincarnator]
             if not candidates:
-                logger.error("\033[91m致命错误：白厄在本次模拟中未出现！\033[0m")
+                logger.error("\033[91m致命错误：白厄电信号在本次模拟中不存在！\033[0m")
                 return None
             new_host = max(candidates, key=lambda p:p.score)
             logger.info(f"\033[94m[DEBUG] 从非黄金裔中选择新白厄: {new_host.name}, 评分: {new_host.score:.2f}\033[0m")
@@ -389,11 +391,11 @@ class AeonicCycleManager:
             try:
                 neg_world_idx = TITAN_NAMES.index("负世")
                 new_host = max(golden_ones, key=lambda p: p.titan_affinities[neg_world_idx])
-                logger.info(f"\033[96m在黄金裔中，{new_host.name} 是这个轮回的白厄，开始数据继承...\033[0m")
+                logger.info(f"\033[96m在黄金裔中，{new_host.name} 已定义为本次轮回的白厄，开始数据继承...\033[0m")
             except (ValueError, IndexError):
                 logger.warning("\033[93m警告: 未定义'负世'泰坦，将从黄金裔中选择评分最高者。 \033[0m")
                 new_host = max(golden_ones, key=lambda p: p.score)
-            logger.info(f"\033[94m[DEBUG] 从黄金裔中选择新白厄: {new_host.name}, 评分: {new_host.score:.2f}\033[0m")
+            logger.info(f"\033[94m[DEBUG] 从黄金裔中重新定义白厄: {new_host.name}, 评分: {new_host.score:.2f}\033[0m")
         
         old_reincarnator_affinities = reincarnator.titan_affinities.copy() if reincarnator else self.population_manager.base_titan_affinities.copy()
         
@@ -422,5 +424,5 @@ class AeonicCycleManager:
         
         reincarnator.titan_affinities = old_reincarnator_affinities
         reincarnator.golden_one_tenure = 0
-        logger.info(f"\033[91m数据继承成功！新的卡厄斯兰那为: {reincarnator.name}。\033[0m")
+        logger.info(f"\033[91m数据继承成功！新的卡厄斯兰那已定义为: {reincarnator.name}。\033[0m")
         return reincarnator
